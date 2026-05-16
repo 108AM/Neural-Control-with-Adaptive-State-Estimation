@@ -37,7 +37,8 @@ class Illustrator:
             neurons = list(range(self.neuron_cnt))
 
         fig, axes = plt.subplots(len(trials), 1, figsize=(10, 6 * len(trials)))
-
+        if len(trials) == 1:
+            axes = [axes]  # Ensure axes is always a list for consistent indexing
         for trial_index, trial in enumerate(trials):
             subplot_title = f'Trial {trial + 1}'
             for neuron in neurons:
@@ -69,6 +70,8 @@ class Illustrator:
             neurons = list(range(self.neuron_cnt))
 
         fig, axes = plt.subplots(len(trials), 1, figsize=(10, 6 * len(trials)))
+        if len(trials) == 1:
+            axes = [axes]  # Ensure axes is always a list for consistent indexing
 
         for trial_index, trial in enumerate(trials):
             subplot_title = f'Trial {trial + 1} (Centered)'
@@ -78,19 +81,12 @@ class Illustrator:
             axes[trial_index].set_xlabel('Timepoints')
             axes[trial_index].set_ylabel('Centered Activity (Neurons)')
         plt.show()
-        # data_reshaped = (self.observation - self.mean[:, :, np.newaxis]).reshape(-1, self.neuron_cnt)
-        # plt.figure(figsize=(12, 8))
-        # sns.heatmap(data_reshaped.T, cmap='viridis', cbar=True)
-        # plt.title('Neuron Activity Heatmap (Neurons x Timepoints)')
-        # plt.xlabel('Timepoints (Trials concatenated)')
-        # plt.ylabel('Neurons')
-        # plt.show()
+
 
     def pca(self, n_components: int = None, plot: bool = True):
         """Reduce data to latent space using PCA and plot the dynamics.
         returns the latent representation of the data in the reduced PCA space."""
-        data_centered = self.observation - self.mean[:, :, np.newaxis]  # Center the data by subtracting the mean activity
-        data_reshaped = data_centered.reshape(-1, self.neuron_cnt)
+        data_reshaped = self.observations_centered.reshape(-1, self.neuron_cnt)
         if n_components is None:
             n_components = self.neuron_cnt  # Keep all components if n_components is not specified
         pca = PCA(n_components=n_components)
@@ -105,6 +101,9 @@ class Illustrator:
             plt.ylabel('Cumulative Explained Variance')
             plt.title('PCA Explained Variance (Scree Plot)')
             plt.tight_layout()
+            plt.legend()
+            plt.grid(True)
+            plt.show()
 
             fig, axes = plt.subplots(n_components, 1, figsize=(10, 3 * n_components), sharex=True)
             if n_components == 1:
@@ -112,14 +111,14 @@ class Illustrator:
                 
             for i, ax in enumerate(axes):
                 for trial_index in range(self.trial_cnt):
-                    ax.plot(latent[trial_index, :, i], label=f'Trial {trial_index + 1}')
+                     ax.plot(latent[trial_index, :, i], label=f'Trial {trial_index + 1}')
                 ax.set_ylabel(f'PC {i + 1}')
-                if i == 0:
-                    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+                # if i == 0:
+                #     ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
                     
             axes[-1].set_xlabel('Timepoints')
             plt.suptitle(f'Latent Dynamics ({n_components} PCA Components)')
-            plt.grid(True)
+            plt.tight_layout(rect=[0, 0, 1, 0.98])
             plt.show()
         
         return latent
