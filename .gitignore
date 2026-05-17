@@ -63,3 +63,7 @@ desktop.ini
 
 # Logs
 *.log
+
+# Sphinx
+docs/build/
+docs/source/_autosummary/

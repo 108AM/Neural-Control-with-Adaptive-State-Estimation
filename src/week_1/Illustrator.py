@@ -9,6 +9,8 @@ A 3-D NumPy array with shape (Trials, Timepoints, Neurons).
 
 Quick-start
 -----------
+::
+
     import numpy as np
     from Illustrator import Illustrator
 
@@ -50,19 +52,16 @@ _PALETTE = [
 
 
 class Illustrator:
-    """
-    Explores and visualises a neural dataset of shape (Trials, Timepoints, Neurons).
+    """Explores and visualises a neural dataset of shape ``(Trials, Timepoints, Neurons)``.
 
-    Parameters
-    ----------
-    data : np.ndarray, shape (T, N_t, N_n)
-        T   – number of trials
-        N_t – number of time-points per trial
-        N_n – number of neurons (observed dimensions)
-    dt : float, optional
-        Sampling interval (default 1.0 — arbitrary time units).
-    neuron_labels : list of str, optional
-        Names for each neuron channel.  Defaults to ["Neuron 0", "Neuron 1", …].
+    :param data: 3-D array of neural activity with axes
+        ``(Trials, Timepoints, Neurons)``.
+    :type data: numpy.ndarray
+    :param dt: Sampling interval in arbitrary time units. Defaults to ``1.0``.
+    :type dt: float
+    :param neuron_labels: Name for each neuron channel.
+        Defaults to ``["Neuron 0", "Neuron 1", …]``.
+    :type neuron_labels: list of str, optional
     """
 
     # ------------------------------------------------------------------ init
@@ -106,11 +105,7 @@ class Illustrator:
 
     # ----------------------------------------------------------- text summary
     def summary(self) -> None:
-        """
-        Print basic statistics of the dataset:
-        shape, per-neuron mean / standard deviation / min / max,
-        and global signal-to-noise ratio (mean / std across time).
-        """
+        """Print per-neuron statistics: mean, std, min, max, and SNR."""
         print("=" * 60)
         print("Dataset summary")
         print("=" * 60)
@@ -146,26 +141,21 @@ class Illustrator:
         plot_std=False,
         population_centred=False,
     ):
-        """
-        Plot individual trial traces for a chosen set of neurons.
+        """Plot individual trial traces for a chosen set of neurons.
 
-        Parameters
-        ----------
-        trials : list of int, optional
-            Indices of trials to plot.  Defaults to all trials.
-        neurons : list of int, optional
-            Indices of neurons to plot.  Defaults to all neurons.
-        plot_mean : bool
-            Overlay the population mean (mean across neurons) at each timepoint.
-        plot_std : bool
-            Overlay the standard deviation across neurons at each timepoint.
-        population_centred : bool
-            If True, plot population-centred data (mean across neurons removed
-            at every timepoint) rather than raw activity.
-
-        Returns
-        -------
-        matplotlib.figure.Figure
+        :param trials: Indices of trials to plot. Defaults to all trials.
+        :type trials: list of int, optional
+        :param neurons: Indices of neurons to plot. Defaults to all neurons.
+        :type neurons: list of int, optional
+        :param plot_mean: Overlay the population mean (mean across neurons) at each timepoint.
+        :type plot_mean: bool
+        :param plot_std: Overlay the standard deviation across neurons at each timepoint.
+        :type plot_std: bool
+        :param population_centred: If ``True``, plot population-centred data (mean across
+            neurons removed at every timepoint) rather than raw activity.
+        :type population_centred: bool
+        :returns: The figure.
+        :rtype: matplotlib.figure.Figure
         """
         if trials is None:
             trials = list(range(self.n_trials))
@@ -221,20 +211,16 @@ class Illustrator:
     def plot_mean_and_std(
         self, neurons: list = None, show_sem: bool = True, figsize: tuple = (10, 4)
     ) -> plt.Figure:
-        """
-        Plot trial-averaged activity (± SEM) for selected neurons.
+        """Plot trial-averaged activity ± SEM for selected neurons.
 
-        Parameters
-        ----------
-        neurons : list of int, optional
-            Neuron indices to include.  Defaults to all.
-        show_sem : bool
-            Whether to shade the standard error of the mean.
-        figsize : (width, height)
-
-        Returns
-        -------
-        matplotlib.figure.Figure
+        :param neurons: Neuron indices to include. Defaults to all.
+        :type neurons: list of int, optional
+        :param show_sem: Whether to shade the standard error of the mean.
+        :type show_sem: bool
+        :param figsize: Figure size as ``(width, height)``.
+        :type figsize: tuple
+        :returns: The figure.
+        :rtype: matplotlib.figure.Figure
         """
         neurons = list(range(self.n_neurons)) if neurons is None else neurons
 
@@ -261,19 +247,15 @@ class Illustrator:
 
     # ------------------------------------------------------- heatmap (neuron × time)
     def plot_heatmap(self, trial: int = None, figsize: tuple = (10, 5)) -> plt.Figure:
-        """
-        Neuron × Time heatmap of activity.
+        """Neuron × Time heatmap of activity.
 
-        Parameters
-        ----------
-        trial : int or None
-            If given, plot data from that single trial.
-            If None (default), plot the trial-averaged data.
-        figsize : (width, height)
-
-        Returns
-        -------
-        matplotlib.figure.Figure
+        :param trial: Single trial to plot. If ``None`` (default), plots the
+            trial-averaged data.
+        :type trial: int, optional
+        :param figsize: Figure size as ``(width, height)``.
+        :type figsize: tuple
+        :returns: The figure.
+        :rtype: matplotlib.figure.Figure
         """
         if trial is None:
             mat = self.mean_activity.T
@@ -306,21 +288,16 @@ class Illustrator:
         return fig
 
     def plot_neuron_heatmap(self, trials=None, neurons=None, population_centred=True):
-        """
-        Per-trial heatmap of neuron activity (Timepoints × Neurons).
+        """Per-trial heatmap of neuron activity (Timepoints × Neurons).
 
-        Parameters
-        ----------
-        trials : list of int, optional
-            Trial indices to include.  Defaults to all.
-        neurons : list of int, optional
-            Neuron indices to include.  Defaults to all.
-        population_centred : bool
-            If True (default), plot population-centred data.
-
-        Returns
-        -------
-        matplotlib.figure.Figure
+        :param trials: Trial indices to include. Defaults to all.
+        :type trials: list of int, optional
+        :param neurons: Neuron indices to include. Defaults to all.
+        :type neurons: list of int, optional
+        :param population_centred: If ``True`` (default), plot population-centred data.
+        :type population_centred: bool
+        :returns: The figure.
+        :rtype: matplotlib.figure.Figure
         """
         if trials is None:
             trials = list(range(self.n_trials))
@@ -355,19 +332,15 @@ class Illustrator:
     def plot_correlation(
         self, trial: int = None, figsize: tuple = (6, 5)
     ) -> plt.Figure:
-        """
-        Plot the Pearson correlation matrix between neurons.
+        """Plot the Pearson correlation matrix between neurons.
 
-        Parameters
-        ----------
-        trial : int or None
-            If given, compute correlation from that trial only.
+        :param trial: If given, compute correlation from that trial only.
             Otherwise uses all trials concatenated along the time axis.
-        figsize : (width, height)
-
-        Returns
-        -------
-        matplotlib.figure.Figure
+        :type trial: int, optional
+        :param figsize: Figure size as ``(width, height)``.
+        :type figsize: tuple
+        :returns: The figure.
+        :rtype: matplotlib.figure.Figure
         """
         if trial is None:
             mat = self.data.reshape(-1, self.n_neurons)
@@ -393,10 +366,9 @@ class Illustrator:
 
     # ------------------------------------------------------- internal helpers
     def _demean(self, mat: np.ndarray) -> np.ndarray:
-        """
-        Remove the population mean at each timestep.
+        """Remove the population mean at each timestep.
 
-        At every time-point t the mean activity across all neurons is subtracted:
+        At every time-point t the mean activity across all neurons is subtracted::
 
             mat_centred[t, :] = mat[t, :] - mean(mat[t, :])
 
@@ -405,35 +377,27 @@ class Illustrator:
         neurons, rather than simply the direction of the shared mean response
         (which would otherwise capture the most variance by construction).
 
-        Parameters
-        ----------
-        mat : np.ndarray, shape (N_t, N_n)
-
-        Returns
-        -------
-        np.ndarray, shape (N_t, N_n)  — mean-subtracted along the neuron axis
+        :param mat: Input matrix of shape ``(N_t, N_n)``.
+        :type mat: numpy.ndarray
+        :returns: Mean-subtracted matrix of shape ``(N_t, N_n)``.
+        :rtype: numpy.ndarray
         """
         return mat - mat.mean(axis=1, keepdims=True)
 
     # ------------------------------------------------------- PCA trajectories
     def plot_pca(self, n_components: int = 3, figsize: tuple = (12, 4)) -> plt.Figure:
-        """
-        Reduce the trial-averaged, population-centred activity to its top
-        principal components and plot each PC over time.
+        """Plot the top principal components of the trial-averaged population activity.
 
         The population mean across neurons is removed at each timestep before
-        fitting (see ``_demean``), so that PCA captures differential structure
+        fitting (see :meth:`_demean`), so that PCA captures differential structure
         rather than the shared mean response.
 
-        Parameters
-        ----------
-        n_components : int
-            Number of PCs to extract and display.
-        figsize : (width, height)
-
-        Returns
-        -------
-        matplotlib.figure.Figure
+        :param n_components: Number of PCs to extract and display.
+        :type n_components: int
+        :param figsize: Figure size as ``(width, height)``.
+        :type figsize: tuple
+        :returns: The figure.
+        :rtype: matplotlib.figure.Figure
         """
         n_components = min(n_components, self.n_neurons, self.n_time)
         centred = self._demean(self.trial_averaged_data)  # (N_t, N_n)
@@ -476,20 +440,18 @@ class Illustrator:
     def plot_variance_explained(
         self, n_components: int = None, figsize: tuple = (6, 4)
     ) -> plt.Figure:
-        """
-        Plot the fraction and cumulative variance explained by PCA using the
-        trial-averaged data centred by removing the population mean at each
-        time-point (see ``_demean``).
+        """Plot the fraction and cumulative variance explained by PCA.
 
-        Parameters
-        ----------
-        n_components : int or None
-            Number of components to show.  Defaults to min(neurons, time).
-        figsize : (width, height)
+        Uses the trial-averaged data with the population mean removed at each
+        timepoint (see :meth:`_demean`).
 
-        Returns
-        -------
-        matplotlib.figure.Figure
+        :param n_components: Number of components to show.
+            Defaults to ``min(neurons, time)``.
+        :type n_components: int, optional
+        :param figsize: Figure size as ``(width, height)``.
+        :type figsize: tuple
+        :returns: The figure.
+        :rtype: matplotlib.figure.Figure
         """
         n_max = min(self.n_neurons, self.n_time)
         if n_components is not None:
@@ -531,24 +493,21 @@ class Illustrator:
         figsize: tuple = (10, 4),
         return_max_lags: bool = True,
     ):
-        """
-        Plot the autocorrelation function (ACF) for selected neurons,
-        averaged across trials.
+        """Plot the autocorrelation function (ACF) for selected neurons, averaged across trials.
 
-        Parameters
-        ----------
-        neurons : list of int, optional
-            Neuron indices.  Defaults to all.
-        max_lag : int or None
-            Maximum lag to display (in time-steps).  Defaults to N_t // 2.
-        figsize : (width, height)
-        return_max_lags : bool
-            If True, returns a tuple of (Figure, dict mapping neuron to lag of max correlation).
-            Excludes lag 0, which is always 1.0 by definition.
-
-        Returns
-        -------
-        matplotlib.figure.Figure (or tuple of Figure, dict if return_max_lags is True)
+        :param neurons: Neuron indices. Defaults to all.
+        :type neurons: list of int, optional
+        :param max_lag: Maximum lag to display in time-steps.
+            Defaults to ``N_t // 2``.
+        :type max_lag: int, optional
+        :param figsize: Figure size as ``(width, height)``.
+        :type figsize: tuple
+        :param return_max_lags: If ``True``, also return a dict mapping each
+            neuron label to the lag of its peak autocorrelation (excluding lag 0).
+        :type return_max_lags: bool
+        :returns: The figure, and — when *return_max_lags* is ``True`` — a dict
+            mapping each neuron label to its peak-autocorrelation lag in time units.
+        :rtype: matplotlib.figure.Figure or tuple(matplotlib.figure.Figure, dict)
         """
         neurons = list(range(self.n_neurons)) if neurons is None else neurons
         max_lag = self.n_time // 2 if max_lag is None else max_lag
@@ -568,7 +527,9 @@ class Illustrator:
 
             mean_acf = np.mean(acfs, axis=0)
 
-            # Find the lag with maximum correlation (ignoring lag 0, since that is measuring correlation with itself at the same time, which mathematically is always 1.0)
+            # Find the lag with maximum correlation (ignoring lag 0, since that is
+            # measuring correlation with itself at the same time, which mathematically
+            # is always 1.0)
             if len(mean_acf) > 1:
                 best_lag_idx = np.argmax(mean_acf[1:]) + 1
                 max_correlation_lags[self.neuron_labels[ni]] = lags[best_lag_idx]
@@ -601,21 +562,16 @@ class Illustrator:
     def plot_power_spectrum(
         self, neurons: list = None, fs: float = None, figsize: tuple = (10, 4)
     ) -> plt.Figure:
-        """
-        Plot the power spectral density (Welch's method) for selected neurons,
-        averaged across trials.
+        """Plot the power spectral density (Welch's method) for selected neurons, averaged across trials.
 
-        Parameters
-        ----------
-        neurons : list of int, optional
-            Neuron indices.  Defaults to all.
-        fs : float or None
-            Sampling frequency in Hz.  Defaults to 1/dt.
-        figsize : (width, height)
-
-        Returns
-        -------
-        matplotlib.figure.Figure
+        :param neurons: Neuron indices. Defaults to all.
+        :type neurons: list of int, optional
+        :param fs: Sampling frequency in Hz. Defaults to ``1/dt``.
+        :type fs: float, optional
+        :param figsize: Figure size as ``(width, height)``.
+        :type figsize: tuple
+        :returns: The figure.
+        :rtype: matplotlib.figure.Figure
         """
         neurons = list(range(self.n_neurons)) if neurons is None else neurons
         fs = 1.0 / self.dt if fs is None else fs
@@ -648,9 +604,7 @@ class Illustrator:
 
     # -------------------------------------------------- convenience: all plots
     def plot_all(self) -> None:
-        """
-        Run every visualisation method in sequence — a one-stop overview.
-        """
+        """Run every visualisation method in sequence — a one-stop overview."""
         self.summary()
         self.plot_neurons()
         self.plot_mean_and_std()

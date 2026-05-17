@@ -42,3 +42,11 @@ dev = [
     "ruff>=0.15.13",
     "ty>=0.0.37",
 ]
+docs = [
+    "sphinx>=8.1.3",
+    "furo>=2024.8.6",
+    "sphinx-autodoc-typehints>=2.5.0",
+    "sphinx-copybutton>=0.5.2",
+    "myst-parser>=4.0.0",
+    "sphinx-autobuild>=2024.2.4",
+]
