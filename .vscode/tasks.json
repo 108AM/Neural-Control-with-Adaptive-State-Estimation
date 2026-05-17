@@ -81,6 +81,27 @@
       }
     },
     {
+      "label": "docs: serve (live reload)",
+      "type": "shell",
+      "command": "uv run --group docs make -C docs livehtml",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*sphinx-autobuild.*",
+          "endsPattern": ".*Serving on http.*"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
       "label": "check: all",
       "dependsOrder": "sequence",
       "dependsOn": ["ruff: format", "ruff: lint", "ty: typecheck", "test: run all"],
