@@ -9,7 +9,7 @@ authors = [
     { name = "Freddie McElwaine-John", email = "fm605@cam.ac.uk" },
     { name = "Tahmid Azam", email = "ta549@cam.ac.uk" }
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
     "matplotlib>=3.10.9",
     "numpy>=2.4.5",
