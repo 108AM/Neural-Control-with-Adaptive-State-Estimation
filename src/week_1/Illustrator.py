@@ -1,33 +1,3 @@
-"""
-Illustrator.py
-==============
-A class for exploring, summarising, and visualising neural population datasets.
-
-Expected data format
---------------------
-A 3-D NumPy array with shape (Trials, Timepoints, Neurons).
-
-Quick-start
------------
-::
-
-    import numpy as np
-    from Illustrator import Illustrator
-
-    data = np.load("ExampleDataset.npy")   # shape (5, 60, 16)
-    ill  = Illustrator(data)
-
-    ill.summary()                 # print dataset statistics
-    ill.plot_neurons()            # raw traces per trial, all neurons
-    ill.plot_mean_and_std()       # trial-averaged activity ± SEM
-    ill.plot_heatmap()            # neuron × time heatmap (trial-averaged)
-    ill.plot_neuron_heatmap()     # per-trial heatmap, optionally centred
-    ill.plot_correlation()        # inter-neuron correlation matrix
-    ill.plot_pca()                # top PCs of population activity
-    ill.plot_variance_explained() # PCA scree plot
-    ill.plot_autocorrelation()    # per-neuron autocorrelation
-    ill.plot_power_spectrum()     # per-neuron power spectra
-"""
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -53,6 +23,27 @@ _PALETTE = [
 
 class Illustrator:
     """Explores and visualises a neural dataset of shape ``(Trials, Timepoints, Neurons)``.
+
+    Expected data format: a 3-D NumPy array with shape ``(Trials, Timepoints, Neurons)``.
+
+    **Quick-start**::
+
+        import numpy as np
+        from Illustrator import Illustrator
+
+        data = np.load("ExampleDataset.npy")   # shape (5, 60, 16)
+        ill  = Illustrator(data)
+
+        ill.summary()                 # print dataset statistics
+        ill.plot_neurons()            # raw traces per trial, all neurons
+        ill.plot_mean_and_std()       # trial-averaged activity ± SEM
+        ill.plot_heatmap()            # neuron × time heatmap (trial-averaged)
+        ill.plot_neuron_heatmap()     # per-trial heatmap, optionally centred
+        ill.plot_correlation()        # inter-neuron correlation matrix
+        ill.plot_pca()                # top PCs of population activity
+        ill.plot_variance_explained() # PCA scree plot
+        ill.plot_autocorrelation()    # per-neuron autocorrelation
+        ill.plot_power_spectrum()     # per-neuron power spectra
 
     :param data: 3-D array of neural activity with axes
         ``(Trials, Timepoints, Neurons)``.

@@ -1,7 +1,7 @@
 # Neural Control with Adaptive State Estimation
 
 ```{toctree}
-:maxdepth: 2
+:maxdepth: 1
 :caption: API reference
 
 api/illustrator
