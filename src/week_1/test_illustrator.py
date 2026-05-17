@@ -34,7 +34,8 @@ import os
 
 import numpy as np
 import matplotlib
-matplotlib.use("Agg")          # non-interactive backend — must be set before pyplot import
+
+matplotlib.use("Agg")  # non-interactive backend — must be set before pyplot import
 import matplotlib.pyplot as plt
 import pytest
 
@@ -46,6 +47,7 @@ from Illustrator import Illustrator
 # ══════════════════════════════════════════════════════════════════════════════
 # Fixtures
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 @pytest.fixture
 def rng():
@@ -83,11 +85,11 @@ def ill_small(small_data):
 # Initialisation
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestInit:
 
+class TestInit:
     def test_shape_attributes(self, ill, standard_data):
-        assert ill.n_trials  == 5
-        assert ill.n_time    == 60
+        assert ill.n_trials == 5
+        assert ill.n_time == 60
         assert ill.n_neurons == 16
         assert ill.data is standard_data
 
@@ -131,8 +133,8 @@ class TestInit:
 # Derived attributes
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestDerivedAttributes:
 
+class TestDerivedAttributes:
     def test_trial_averaged_shape(self, ill):
         assert ill.trial_averaged_data.shape == (60, 16)
 
@@ -168,8 +170,8 @@ class TestDerivedAttributes:
 # _demean
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestDemean:
 
+class TestDemean:
     def test_output_shape_preserved(self, ill):
         mat = ill.trial_averaged_data
         assert ill._demean(mat).shape == mat.shape
@@ -177,7 +179,7 @@ class TestDemean:
     def test_row_means_are_zero(self, ill):
         """After demeaning, the mean across neurons at each timepoint must be 0."""
         centred = ill._demean(ill.trial_averaged_data)
-        row_means = centred.mean(axis=1)          # (N_t,)
+        row_means = centred.mean(axis=1)  # (N_t,)
         np.testing.assert_allclose(row_means, 0.0, atol=1e-12)
 
     def test_pairwise_neuron_differences_preserved(self, ill):
@@ -185,7 +187,7 @@ class TestDemean:
         _demean subtracts the same scalar from every neuron at each timestep,
         so the difference between any two neurons is unchanged.
         """
-        mat     = ill.trial_averaged_data
+        mat = ill.trial_averaged_data
         centred = ill._demean(mat)
         # difference between neuron 0 and neuron 1 should be identical before/after
         np.testing.assert_allclose(
@@ -196,24 +198,28 @@ class TestDemean:
 
     def test_idempotent(self, ill):
         """Applying _demean twice gives the same result as applying it once."""
-        once  = ill._demean(ill.trial_averaged_data)
+        once = ill._demean(ill.trial_averaged_data)
         twice = ill._demean(once)
         np.testing.assert_allclose(once, twice, atol=1e-12)
 
     def test_known_values(self):
         """Verify against a hand-computed example."""
-        data = np.array([[1.0, 3.0],    # row mean = 2  → centred: [-1, 1]
-                         [4.0, 8.0]])   # row mean = 6  → centred: [-2, 2]
-        obj      = Illustrator(np.zeros((2, 2, 2)))   # dummy, just to call _demean
-        centred  = obj._demean(data)
-        expected = np.array([[-1.0, 1.0],
-                             [-2.0, 2.0]])
+        data = np.array(
+            [
+                [1.0, 3.0],  # row mean = 2  → centred: [-1, 1]
+                [4.0, 8.0],
+            ]
+        )  # row mean = 6  → centred: [-2, 2]
+        obj = Illustrator(np.zeros((2, 2, 2)))  # dummy, just to call _demean
+        centred = obj._demean(data)
+        expected = np.array([[-1.0, 1.0], [-2.0, 2.0]])
         np.testing.assert_allclose(centred, expected)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Helper: assert a method returns a Figure and closes cleanly
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 def _is_figure(result):
     return isinstance(result, plt.Figure)
@@ -223,8 +229,8 @@ def _is_figure(result):
 # plot_neurons
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestPlotNeurons:
 
+class TestPlotNeurons:
     def test_returns_figure(self, ill):
         assert _is_figure(ill.plot_neurons())
 
@@ -248,17 +254,22 @@ class TestPlotNeurons:
 
     def test_all_flags_combined(self, ill):
         assert _is_figure(
-            ill.plot_neurons(trials=[0], neurons=[0, 1],
-                             plot_mean=True, plot_std=True,
-                             population_centred=True))
+            ill.plot_neurons(
+                trials=[0],
+                neurons=[0, 1],
+                plot_mean=True,
+                plot_std=True,
+                population_centred=True,
+            )
+        )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # plot_mean_and_std
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestPlotMeanAndStd:
 
+class TestPlotMeanAndStd:
     def test_returns_figure(self, ill):
         assert _is_figure(ill.plot_mean_and_std())
 
@@ -276,8 +287,8 @@ class TestPlotMeanAndStd:
 # plot_heatmap
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestPlotHeatmap:
 
+class TestPlotHeatmap:
     def test_trial_averaged_default(self, ill):
         assert _is_figure(ill.plot_heatmap())
 
@@ -300,8 +311,8 @@ class TestPlotHeatmap:
 # plot_neuron_heatmap
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestPlotNeuronHeatmap:
 
+class TestPlotNeuronHeatmap:
     def test_returns_figure_centred(self, ill):
         assert _is_figure(ill.plot_neuron_heatmap())
 
@@ -322,8 +333,8 @@ class TestPlotNeuronHeatmap:
 # plot_correlation
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestPlotCorrelation:
 
+class TestPlotCorrelation:
     def test_all_trials(self, ill):
         assert _is_figure(ill.plot_correlation())
 
@@ -332,18 +343,18 @@ class TestPlotCorrelation:
 
     def test_correlation_matrix_bounds(self, ill):
         """Verify the computed correlation matrix has values in [-1, 1]."""
-        mat  = ill.data.reshape(-1, ill.n_neurons)
+        mat = ill.data.reshape(-1, ill.n_neurons)
         corr = np.corrcoef(mat.T)
         assert corr.min() >= -1.0 - 1e-10
-        assert corr.max() <=  1.0 + 1e-10
+        assert corr.max() <= 1.0 + 1e-10
 
     def test_correlation_matrix_diagonal_is_one(self, ill):
-        mat  = ill.data.reshape(-1, ill.n_neurons)
+        mat = ill.data.reshape(-1, ill.n_neurons)
         corr = np.corrcoef(mat.T)
         np.testing.assert_allclose(np.diag(corr), 1.0, atol=1e-12)
 
     def test_correlation_matrix_is_symmetric(self, ill):
-        mat  = ill.data.reshape(-1, ill.n_neurons)
+        mat = ill.data.reshape(-1, ill.n_neurons)
         corr = np.corrcoef(mat.T)
         np.testing.assert_allclose(corr, corr.T, atol=1e-12)
 
@@ -352,8 +363,8 @@ class TestPlotCorrelation:
 # plot_pca
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestPlotPca:
 
+class TestPlotPca:
     def test_returns_figure(self, ill):
         assert _is_figure(ill.plot_pca())
 
@@ -370,14 +381,16 @@ class TestPlotPca:
     def test_pca_uses_demeaned_data(self, ill):
         """PC scores on demeaned data should have near-zero mean across time."""
         from sklearn.decomposition import PCA
+
         centred = ill._demean(ill.trial_averaged_data)
-        scores  = PCA(n_components=3).fit_transform(centred)
+        scores = PCA(n_components=3).fit_transform(centred)
         np.testing.assert_allclose(scores.mean(axis=0), 0.0, atol=1e-10)
 
     def test_variance_ratios_sum_to_one(self, ill):
         from sklearn.decomposition import PCA
+
         centred = ill._demean(ill.trial_averaged_data)
-        pca     = PCA().fit(centred)
+        pca = PCA().fit(centred)
         assert pca.explained_variance_ratio_.sum() == pytest.approx(1.0, abs=1e-10)
 
 
@@ -385,8 +398,8 @@ class TestPlotPca:
 # plot_variance_explained
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestPlotVarianceExplained:
 
+class TestPlotVarianceExplained:
     def test_returns_figure(self, ill):
         assert _is_figure(ill.plot_variance_explained())
 
@@ -399,9 +412,10 @@ class TestPlotVarianceExplained:
 
     def test_cumulative_variance_is_non_decreasing(self, ill):
         from sklearn.decomposition import PCA
+
         centred = ill._demean(ill.trial_averaged_data)
-        ev      = PCA().fit(centred).explained_variance_ratio_
-        cumev   = np.cumsum(ev)
+        ev = PCA().fit(centred).explained_variance_ratio_
+        cumev = np.cumsum(ev)
         assert np.all(np.diff(cumev) >= 0)
 
 
@@ -409,8 +423,8 @@ class TestPlotVarianceExplained:
 # plot_autocorrelation
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestPlotAutocorrelation:
 
+class TestPlotAutocorrelation:
     def test_returns_figure(self, ill):
         assert _is_figure(ill.plot_autocorrelation())
 
@@ -424,29 +438,29 @@ class TestPlotAutocorrelation:
         """By definition the ACF at lag 0 should equal 1.0."""
         for trial in range(ill.n_trials):
             for ni in range(ill.n_neurons):
-                x  = ill.data[trial, :, ni] - ill.data[trial, :, ni].mean()
+                x = ill.data[trial, :, ni] - ill.data[trial, :, ni].mean()
                 ac = np.correlate(x, x, mode="full")
-                ac = ac[len(ac) // 2:]
+                ac = ac[len(ac) // 2 :]
                 ac = ac / ac[0]
                 assert ac[0] == pytest.approx(1.0)
 
     def test_acf_is_bounded(self, ill):
         """Normalised ACF values should lie in [-1, 1]."""
         for trial in range(ill.n_trials):
-            x  = ill.data[trial, :, 0] - ill.data[trial, :, 0].mean()
+            x = ill.data[trial, :, 0] - ill.data[trial, :, 0].mean()
             ac = np.correlate(x, x, mode="full")
-            ac = ac[len(ac) // 2:]
+            ac = ac[len(ac) // 2 :]
             ac = ac / ac[0]
             assert ac.min() >= -1.0 - 1e-10
-            assert ac.max() <=  1.0 + 1e-10
+            assert ac.max() <= 1.0 + 1e-10
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # plot_power_spectrum
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestPlotPowerSpectrum:
 
+class TestPlotPowerSpectrum:
     def test_returns_figure(self, ill):
         assert _is_figure(ill.plot_power_spectrum())
 
@@ -459,10 +473,10 @@ class TestPlotPowerSpectrum:
     def test_psd_is_non_negative(self, ill):
         """Power spectral density values must be non-negative."""
         from scipy.signal import welch
+
         for ni in range(ill.n_neurons):
             for t in range(ill.n_trials):
-                _, psd = welch(ill.data[t, :, ni], fs=1.0,
-                               nperseg=min(32, ill.n_time))
+                _, psd = welch(ill.data[t, :, ni], fs=1.0, nperseg=min(32, ill.n_time))
                 assert np.all(psd >= 0.0)
 
 
@@ -470,8 +484,8 @@ class TestPlotPowerSpectrum:
 # summary
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestSummary:
 
+class TestSummary:
     def test_runs_without_error(self, ill, capsys):
         ill.summary()
 
@@ -485,7 +499,7 @@ class TestSummary:
     def test_output_contains_neuron_labels(self, ill, capsys):
         ill.summary()
         out = capsys.readouterr().out
-        assert "Neuron 0"  in out
+        assert "Neuron 0" in out
         assert "Neuron 15" in out
 
     def test_output_contains_snr(self, ill, capsys):
@@ -503,8 +517,8 @@ class TestSummary:
 # plot_all  (smoke test — just ensure nothing raises)
 # ══════════════════════════════════════════════════════════════════════════════
 
-class TestPlotAll:
 
+class TestPlotAll:
     def test_runs_without_error(self, ill):
         ill.plot_all()
 

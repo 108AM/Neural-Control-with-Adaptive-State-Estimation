@@ -1,11 +1,8 @@
-import numpy as np
-
-class Simulator():
+class Simulator:
     def __init__(self, model):
-        self.A = model['A']
-        self.B = model['B']
-        self.C = model['C']
-
+        self.A = model["A"]
+        self.B = model["B"]
+        self.C = model["C"]
 
     def run(self, initial_state, control_inputs, time_steps):
         states = [initial_state]

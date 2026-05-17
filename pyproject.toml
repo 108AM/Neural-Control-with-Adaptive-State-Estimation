@@ -1,0 +1,44 @@
+[project]
+name = "neural-control-with-adaptive-state-estimation"
+version = "0.1.0"
+description = "Engineering Part IIA project"
+readme = "README.md"
+authors = [
+    { name = "Jerry Liu", email = "yhl63@cam.ac.uk" },
+    { name = "Asmee Mishra", email = "am3244@cam.ac.uk" },
+    { name = "Freddie McElwaine-John", email = "fm605@cam.ac.uk" },
+    { name = "Tahmid Azam", email = "ta549@cam.ac.uk" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "matplotlib>=3.10.9",
+    "numpy>=2.4.5",
+    "scikit-learn>=1.8.0",
+    "seaborn>=0.13.2",
+]
+
+[project.scripts]
+neural-control-with-adaptive-state-estimation = "neural_control_with_adaptive_state_estimation:main"
+
+[build-system]
+requires = ["uv_build>=0.11.12,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["src"]
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+
+[tool.ruff.lint]
+exclude = ["*.ipynb"]
+
+[tool.ty.src]
+exclude = ["**/*.ipynb"]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.2.0",
+    "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.15.13",
+    "ty>=0.0.37",
+]

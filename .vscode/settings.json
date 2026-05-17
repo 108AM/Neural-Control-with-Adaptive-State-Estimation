@@ -1,0 +1,16 @@
+{
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+  "notebook.formatOnSave.enabled": true,
+  "ruff.nativeServer": "on",
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": ["src"],
+  "python.testing.autoTestDiscoverOnSaveEnabled": true
+}
