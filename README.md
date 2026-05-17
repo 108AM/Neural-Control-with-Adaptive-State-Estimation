@@ -14,5 +14,6 @@
 - Format using `uv run ruff format` or the task `ruff: format`.
 - Typecheck using `uv run ty check` or the task `ty: typecheck`.
 - Run tests with `uv run pytest` or the task `test: run all`.
+- Build and serve documentation with `uv run --group docs make -C docs livehtml` or the task `docs: serve (live reload)`.
 
 You can see more tasks in [.vscode/tasks.json](.vscode/tasks.json). VS Code is configured to format on save via bindings in [.vscode/settings.json](.vscode/settings.json). Note notebooks (i.e., `ipynb` file extensions) are excluded from typechecking and linting.
