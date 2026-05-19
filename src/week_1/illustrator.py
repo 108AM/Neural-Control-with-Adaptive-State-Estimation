@@ -9,6 +9,7 @@ import numpy as np
 import seaborn as sns
 from autocorrelation import Autocorrelation
 from correlation import Correlation
+from cross_correlation import CrossCorrelation
 from dataset import Dataset
 from matplotlib.colors import TwoSlopeNorm
 from matplotlib.figure import Figure
@@ -259,9 +260,7 @@ class Illustrator:
         fig, ax = plt.subplots(figsize=figsize)
         for k, n in enumerate(neuron_indices):
             mean = mean_mat[:, n]
-            ax.plot(
-                time, mean, color=_palette_color(k), lw=2, label=f"Neuron {n}"
-            )
+            ax.plot(time, mean, color=_palette_color(k), lw=2, label=f"Neuron {n}")
             if show_sem:
                 sem = result.sem[:, n]
                 ax.fill_between(
@@ -509,7 +508,12 @@ class Illustrator:
 
         ax1.bar(ks, ev * 100, color=_palette_color(0), alpha=0.7, label="Individual")
         ax2.plot(
-            ks, np.cumsum(ev) * 100, "o-", color=_palette_color(1), lw=2, label="Cumulative"
+            ks,
+            np.cumsum(ev) * 100,
+            "o-",
+            color=_palette_color(1),
+            lw=2,
+            label="Cumulative",
         )
         ax2.axhline(90, color="grey", ls="--", lw=1, label="90% threshold")
 
@@ -567,6 +571,44 @@ class Illustrator:
         fig.tight_layout()
         return fig
 
+    def plot_cross_correlation(
+        self,
+        neuron_a: int = 0,
+        neuron_b: int = 1,
+        trials: IndexLike | None = None,
+        max_lag: int | None = None,
+        figsize: tuple[float, float] = (10, 4),
+    ) -> Figure:
+        """Plot the cross-correlation function between two neurons, averaged across selected trials.
+
+        :param neuron_a: Index of the reference neuron. Defaults to ``0``.
+        :param neuron_b: Index of the target neuron. Defaults to ``1``.
+        :param trials: Trials to average over. Accepts any :data:`IndexLike`
+            form or ``None`` (all trials). Defaults to ``None``.
+        :param max_lag: Maximum lag in timesteps (both positive and negative
+            lags are shown). Defaults to ``n_timesteps // 2``.
+        :param figsize: Figure size as ``(width, height)``.
+        :returns: The figure.
+        """
+        ds = self._dataset
+        trial_indices = _resolve_indices(trials, ds.n_trials)
+        subset = Dataset(ds.observations[trial_indices])
+        result = CrossCorrelation(
+            subset, neuron_a=neuron_a, neuron_b=neuron_b, max_lag=max_lag
+        ).result
+
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.plot(result.lags, result.ccf, color=_palette_color(0), lw=2)
+        ax.axhline(0, color="black", lw=0.8, ls="--")
+        ax.axvline(0, color="grey", lw=0.8, ls=":")
+        ax.set_xlabel("Lag (timesteps)")
+        ax.set_ylabel("Cross-correlation")
+        ax.set_title(
+            f"Cross-correlation: Neuron {neuron_a} → Neuron {neuron_b} (trial-averaged)"
+        )
+        fig.tight_layout()
+        return fig
+
     def plot_power_spectrum(
         self,
         neurons: IndexLike | None = None,
@@ -616,8 +658,8 @@ class Illustrator:
         :returns: Dict mapping method-name suffix to its :class:`Figure`. Keys
             are ``"trials"``, ``"trial_average"``, ``"neuron_time_heatmap"``,
             ``"trial_heatmaps"``, ``"correlation"``, ``"pca"``,
-            ``"variance_explained"``, ``"autocorrelation"``, and
-            ``"power_spectrum"``.
+            ``"variance_explained"``, ``"autocorrelation"``,
+            ``"cross_correlation"``, and ``"power_spectrum"``.
         """
         self.summary()
         return {
@@ -629,5 +671,6 @@ class Illustrator:
             "pca": self.plot_pca(),
             "variance_explained": self.plot_variance_explained(),
             "autocorrelation": self.plot_autocorrelation(),
+            "cross_correlation": self.plot_cross_correlation(),
             "power_spectrum": self.plot_power_spectrum(),
         }
