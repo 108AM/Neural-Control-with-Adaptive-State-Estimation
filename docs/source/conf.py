@@ -36,7 +36,7 @@ source_suffix = {
 }
 
 myst_enable_extensions = [
-    "dollarmath",   # $...$ and $$...$$ math in .md files
+    "dollarmath",  # $...$ and $$...$$ math in .md files
     "colon_fence",  # ::: directive shorthand
 ]
 

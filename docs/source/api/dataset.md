@@ -1,9 +1,9 @@
-# Illustrator
+# Dataset
 
 ```{eval-rst}
-.. py:currentmodule:: illustrator
+.. py:currentmodule:: dataset
 
-.. autoclass:: Illustrator
+.. autoclass:: Dataset
    :members:
    :show-inheritance:
    :member-order: bysource
