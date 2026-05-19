@@ -223,7 +223,8 @@ class Illustrator:
                 ax.plot(pop_mean[trial], color="black", lw=2, label="Pop. mean")
 
             if plot_std:
-                std = ds.observations[trial, :, :][:, neuron_indices].std(axis=1)
+                _src = centred if population_centred else obs
+                std = _src[trial, :, :][:, neuron_indices].std(axis=1)
                 ax.plot(std, color="red", lw=1.5, ls="--", label="Std")
 
             suffix = " (population-centred)" if population_centred else ""
