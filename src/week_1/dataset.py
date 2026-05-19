@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Union
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -43,6 +44,15 @@ class Dataset:
     @property
     def n_neurons(self) -> int:
         return self._observations.shape[2]
+
+    def select_trials(
+        self, indices: Union[NDArray, list[int], slice]
+    ) -> "Dataset":
+        """Return a new Dataset containing only the trials at *indices*.
+
+        Fancy indexing copies the data, so the original dataset is not mutated.
+        """
+        return Dataset(self._observations[indices])
 
     def __repr__(self) -> str:
         return (

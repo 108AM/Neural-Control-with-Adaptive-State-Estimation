@@ -441,7 +441,7 @@ class Illustrator:
         """
         ds = self._dataset
         trial_indices = _resolve_indices(trials, ds.n_trials)
-        subset = Dataset(ds.observations[trial_indices])
+        subset = ds.select_trials(trial_indices)
         result = PCA(subset, n_components=n_components).result
         time = np.arange(ds.n_timesteps)
 
@@ -499,7 +499,7 @@ class Illustrator:
         """
         ds = self._dataset
         trial_indices = _resolve_indices(trials, ds.n_trials)
-        subset = Dataset(ds.observations[trial_indices])
+        subset = ds.select_trials(trial_indices)
         result = PCA(subset, n_components=n_components).result
         ev = result.explained_variance_ratio
         ks = np.arange(1, len(ev) + 1)
@@ -551,7 +551,7 @@ class Illustrator:
         ds = self._dataset
         trial_indices = _resolve_indices(trials, ds.n_trials)
         neuron_indices = _resolve_indices(neurons, ds.n_neurons)
-        subset = Dataset(ds.observations[trial_indices])
+        subset = ds.select_trials(trial_indices)
         result = Autocorrelation(subset, max_lag=max_lag).result
 
         fig, ax = plt.subplots(figsize=figsize)
@@ -593,7 +593,7 @@ class Illustrator:
         """
         ds = self._dataset
         trial_indices = _resolve_indices(trials, ds.n_trials)
-        subset = Dataset(ds.observations[trial_indices])
+        subset = ds.select_trials(trial_indices)
         result = CrossCorrelation(
             subset, neuron_a=neuron_a, neuron_b=neuron_b, max_lag=max_lag
         ).result
@@ -630,7 +630,7 @@ class Illustrator:
         ds = self._dataset
         trial_indices = _resolve_indices(trials, ds.n_trials)
         neuron_indices = _resolve_indices(neurons, ds.n_neurons)
-        subset = Dataset(ds.observations[trial_indices])
+        subset = ds.select_trials(trial_indices)
         result = PowerSpectrum(subset, fs=fs).result
 
         fig, ax = plt.subplots(figsize=figsize)
@@ -688,7 +688,7 @@ class Illustrator:
         """
         ds = self._dataset
         trial_indices = _resolve_indices(trials, ds.n_trials)
-        subset = Dataset(ds.observations[trial_indices])
+        subset = ds.select_trials(trial_indices)
         result = Coherence(subset, fs=fs).result
 
         if neuron_pairs is None:
@@ -755,7 +755,7 @@ class Illustrator:
         ds = self._dataset
         trial_indices = _resolve_indices(trials, ds.n_trials)
         neuron_indices = _resolve_indices(neurons, ds.n_neurons)
-        subset = Dataset(ds.observations[trial_indices])
+        subset = ds.select_trials(trial_indices)
         result = Coherence(subset, fs=fs, f_low=f_low, f_high=f_high).result
 
         mat = result.band_matrix[np.ix_(neuron_indices, neuron_indices)]
