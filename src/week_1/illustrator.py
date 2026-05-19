@@ -80,7 +80,9 @@ def _resolve_indices(sel: IndexLike | None, n: int) -> list[int]:
     return indices
 
 
-def _guard_subplots(indices: list[int], label: str, max_subplots: int) -> list[int]:
+def _guard_subplots(
+    indices: list[int], label: str, max_subplots: int, stacklevel: int = 3
+) -> list[int]:
     """Truncate *indices* to *max_subplots* with a warning if needed.
 
     This prevents methods that create one subplot per element from producing
@@ -98,7 +100,7 @@ def _guard_subplots(indices: list[int], label: str, max_subplots: int) -> list[i
             f"{len(indices)} {label} requested but max_subplots={max_subplots}. "
             f"Only the first {max_subplots} will be plotted. "
             "Increase max_subplots= to show more.",
-            stacklevel=3,
+            stacklevel=stacklevel,
         )
         return indices[:max_subplots]
     return indices
