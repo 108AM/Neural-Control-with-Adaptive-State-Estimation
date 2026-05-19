@@ -8,6 +8,15 @@ from dataset import Dataset
 from numpy.typing import NDArray
 
 
+def population_centre(data: NDArray) -> NDArray:
+    """Subtract the per-timestep cross-neuron mean from *data*.
+
+    Operates on the last axis, so works for both 2-D ``(n_timesteps, n_neurons)``
+    and 3-D ``(n_trials, n_timesteps, n_neurons)`` arrays.
+    """
+    return data - data.mean(axis=-1, keepdims=True)
+
+
 class MeanResult(NamedTuple):
     mean: NDArray  # (n_timesteps, n_neurons)
     sem: NDArray  # (n_timesteps, n_neurons)

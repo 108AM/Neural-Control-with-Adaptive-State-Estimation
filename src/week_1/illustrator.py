@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import warnings
+from functools import cached_property
+from typing import Union
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -9,27 +13,106 @@ from dataset import Dataset
 from matplotlib.colors import TwoSlopeNorm
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
-from mean import Mean
+from mean import Mean, population_centre
 from numpy.typing import ArrayLike
 from pca import PCA
 from power_spectrum import PowerSpectrum
 
-_PALETTE = [
-    "#0072B2",
-    "#E69F00",
-    "#009E73",
-    "#CC79A7",
-    "#56B4E9",
-    "#D55E00",
-    "#F0E442",
-    "#000000",
-]
+IndexLike = Union[int, list[int], slice, range, "np.ndarray"]
+"""Any value accepted as a dimension selector.
+
+Supported forms:
+
+* ``None`` — all indices in the dimension.
+* ``int`` — single index (wrapped in a one-element list).
+* ``list[int]`` — explicit list of indices.
+* ``slice`` — e.g. ``slice(0, 8)`` or ``slice(None, None, 2)``.
+* ``range`` — e.g. ``range(0, 8, 2)``.
+* boolean ``np.ndarray`` of length *n* — selects indices where ``True``.
+* integer ``np.ndarray`` — used as an index array.
+"""
+
+
+def _resolve_indices(sel: IndexLike | None, n: int) -> list[int]:
+    """Normalise any index-like selector into a concrete list of ints.
+
+    :param sel: Selector value. ``None`` expands to all ``n`` indices. See
+        :data:`IndexLike` for the full set of accepted forms.
+    :param n: Total number of elements in the dimension (used to expand
+        ``None`` and resolve ``slice`` objects).
+    :returns: List of non-negative integer indices. Order is preserved; no
+        deduplication is performed.
+    :raises IndexError: If any resolved index falls outside ``[0, n)``.
+    :raises ValueError: If a boolean mask has a length other than *n*, or if
+        *sel* is an unrecognised type.
+    """
+    if sel is None:
+        return list(range(n))
+    if isinstance(sel, (int, np.integer)):
+        indices = [int(sel)]
+    elif isinstance(sel, slice):
+        indices = list(range(*sel.indices(n)))
+    elif isinstance(sel, range):
+        indices = list(sel)
+    elif isinstance(sel, np.ndarray):
+        if sel.dtype == bool:
+            if len(sel) != n:
+                raise ValueError(
+                    f"Boolean mask length {len(sel)} does not match dimension size {n}."
+                )
+            indices = [int(i) for i in np.where(sel)[0]]
+        else:
+            indices = [int(i) for i in sel]
+    elif isinstance(sel, list):
+        indices = sel
+    else:
+        raise ValueError(
+            f"Unsupported index type {type(sel)!r}. Expected None, int, list[int], "
+            "slice, range, or np.ndarray."
+        )
+    out_of_range = [i for i in indices if not (0 <= i < n)]
+    if out_of_range:
+        raise IndexError(
+            f"Indices {out_of_range} are out of range for dimension of size {n}."
+        )
+    return indices
+
+
+def _guard_subplots(indices: list[int], label: str, max_subplots: int) -> list[int]:
+    """Truncate *indices* to *max_subplots* with a warning if needed.
+
+    This prevents methods that create one subplot per element from producing
+    figures with hundreds of panels when the dimension is large.
+
+    :param indices: Already-resolved list of integer indices.
+    :param label: Human-readable name of the dimension (e.g. ``"trials"``),
+        used in the warning message.
+    :param max_subplots: Maximum number of subplots allowed.
+    :returns: *indices* unchanged, or its first *max_subplots* elements if
+        the list was too long.
+    """
+    if len(indices) > max_subplots:
+        warnings.warn(
+            f"{len(indices)} {label} requested but max_subplots={max_subplots}. "
+            f"Only the first {max_subplots} will be plotted. "
+            "Increase max_subplots= to show more.",
+            stacklevel=3,
+        )
+        return indices[:max_subplots]
+    return indices
+
+
+def _palette_color(k: int):
+    """Return the k-th color from the current matplotlib prop cycle."""
+    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    return colors[k % len(colors)]
 
 
 class Illustrator:
     """Visualises a neural dataset of shape ``(n_trials, n_timesteps, n_neurons)``.
 
-    :param dataset: The dataset to visualise.
+    :param dataset: The dataset to visualise. Any array-like is automatically
+        wrapped in a :class:`~dataset.Dataset`.
     """
 
     def __init__(self, dataset: Dataset | ArrayLike) -> None:
@@ -38,17 +121,24 @@ class Illustrator:
         else:
             self._dataset = Dataset(np.asarray(dataset))
 
+    @cached_property
+    def _mean(self) -> Mean:
+        return Mean(self._dataset)
+
     @classmethod
     def from_array(cls, arr: ArrayLike) -> Illustrator:
         """Construct directly from a raw array of shape ``(n_trials, n_timesteps, n_neurons)``."""
         return cls(Dataset(np.asarray(arr)))
 
-    # ------------------------------------------------------------------ text
+    def summary(self) -> dict[str, dict]:
+        """Print per-neuron descriptive statistics to stdout and return them.
 
-    def summary(self) -> None:
-        """Print per-neuron descriptive statistics to stdout."""
+        :returns: Dict keyed by ``"neuron_<i>"`` where each value is a dict
+            with keys ``"mean"``, ``"sem"``, ``"min"``, and ``"max"``
+            (all floats).
+        """
         ds = self._dataset
-        mean_result = Mean(ds).result
+        mean_result = self._mean.result
         print("=" * 60)
         print("Dataset summary")
         print("=" * 60)
@@ -60,63 +150,76 @@ class Illustrator:
         print()
         print(f"  {'Neuron':<14} {'Mean':>8} {'SEM':>8} {'Min':>8} {'Max':>8}")
         print("  " + "-" * 48)
+
+        stats: dict[str, dict] = {}
         for i in range(ds.n_neurons):
             col = ds.observations[:, :, i]
+            m = float(mean_result.mean[:, i].mean())
+            s = float(mean_result.sem[:, i].mean())
+            lo = float(col.min())
+            hi = float(col.max())
             print(
-                f"  {'Neuron ' + str(i):<14} "
-                f"{mean_result.mean[:, i].mean():>8.3f} "
-                f"{mean_result.sem[:, i].mean():>8.3f} "
-                f"{col.min():>8.3f} "
-                f"{col.max():>8.3f}"
+                f"  {'Neuron ' + str(i):<14} {m:>8.3f} {s:>8.3f} {lo:>8.3f} {hi:>8.3f}"
             )
+            stats[f"neuron_{i}"] = {"mean": m, "sem": s, "min": lo, "max": hi}
+
         print("=" * 60)
+        return stats
 
-    # --------------------------------------------------------- raw traces
-
-    def plot_neurons(
+    def plot_trials(
         self,
-        trials: list[int] | None = None,
-        neurons: list[int] | None = None,
+        trials: IndexLike | None = None,
+        neurons: IndexLike | None = None,
         plot_mean: bool = True,
         plot_std: bool = False,
         population_centred: bool = False,
+        figsize: tuple[float, float] | None = None,
+        max_subplots: int = 20,
     ) -> Figure:
         """Plot raw trial traces for selected neurons.
 
-        :param trials: Trial indices to plot. Defaults to all.
-        :param neurons: Neuron indices to plot. Defaults to all.
+        One subplot is drawn per selected trial.
+
+        :param trials: Trials to plot. Accepts any :data:`IndexLike` form or
+            ``None`` (all trials). Defaults to ``None``.
+        :param neurons: Neurons to plot. Accepts any :data:`IndexLike` form
+            or ``None`` (all neurons). Defaults to ``None``.
         :param plot_mean: Overlay the population mean across neurons.
-        :param plot_std: Overlay the std across neurons.
-        :param population_centred: Subtract per-timestep neuron mean before plotting.
+        :param plot_std: Overlay the std across selected neurons.
+        :param population_centred: Subtract the per-timestep neuron mean
+            before plotting.
+        :param figsize: Figure size as ``(width, height)``. Defaults to
+            ``None``, which auto-scales to ``(10, 4 × n_selected_trials)``.
+        :param max_subplots: Maximum number of trial subplots to draw. A
+            :class:`UserWarning` is issued and the list is truncated when
+            the selection exceeds this limit. Defaults to ``20``.
         :returns: The figure.
         """
         ds = self._dataset
-        trials = list(range(ds.n_trials)) if trials is None else trials
-        neurons = list(range(ds.n_neurons)) if neurons is None else neurons
+        trial_indices = _guard_subplots(
+            _resolve_indices(trials, ds.n_trials), "trials", max_subplots
+        )
+        neuron_indices = _resolve_indices(neurons, ds.n_neurons)
+        _figsize = figsize if figsize is not None else (10, 4 * len(trial_indices))
 
-        # population mean across neurons: (n_trials, n_timesteps)
-        pop_mean = ds.observations.mean(axis=2)
-        # population-centred data: subtract pop_mean from every neuron
-        pop_centred = ds.observations - pop_mean[:, :, np.newaxis]
+        obs = ds.observations
+        pop_mean = obs.mean(axis=2)  # (n_trials, n_timesteps)
+        centred = population_centre(obs)  # (n_trials, n_timesteps, n_neurons)
 
-        fig, axes = plt.subplots(len(trials), 1, figsize=(10, 4 * len(trials)))
-        if len(trials) == 1:
+        fig, axes = plt.subplots(len(trial_indices), 1, figsize=_figsize)
+        if len(trial_indices) == 1:
             axes = [axes]
 
-        for ax, trial in zip(axes, trials):
-            for n in neurons:
-                y = (
-                    pop_centred[trial, :, n]
-                    if population_centred
-                    else ds.observations[trial, :, n]
-                )
-                ax.plot(y, color=_PALETTE[n % len(_PALETTE)], label=f"Neuron {n}")
+        for ax, trial in zip(axes, trial_indices):
+            for k, n in enumerate(neuron_indices):
+                y = centred[trial, :, n] if population_centred else obs[trial, :, n]
+                ax.plot(y, color=_palette_color(k), label=f"Neuron {n}")
 
             if plot_mean:
                 ax.plot(pop_mean[trial], color="black", lw=2, label="Pop. mean")
 
             if plot_std:
-                std = ds.observations[trial, :, :][:, neurons].std(axis=1)
+                std = ds.observations[trial, :, :][:, neuron_indices].std(axis=1)
                 ax.plot(std, color="red", lw=1.5, ls="--", label="Std")
 
             suffix = " (population-centred)" if population_centred else ""
@@ -128,31 +231,36 @@ class Illustrator:
         fig.tight_layout()
         return fig
 
-    # ------------------------------------------------- trial-averaged activity
-
-    def plot_mean_and_std(
+    def plot_trial_average(
         self,
-        neurons: list[int] | None = None,
+        neurons: IndexLike | None = None,
         show_sem: bool = True,
+        population_centred: bool = False,
         figsize: tuple[float, float] = (10, 4),
     ) -> Figure:
         """Plot trial-averaged activity ± SEM for selected neurons.
 
-        :param neurons: Neuron indices to include. Defaults to all.
-        :param show_sem: Whether to shade the SEM.
+        :param neurons: Neurons to include. Accepts any :data:`IndexLike`
+            form or ``None`` (all neurons). Defaults to ``None``.
+        :param show_sem: Whether to shade the SEM as a filled band.
+        :param population_centred: Subtract the per-timestep cross-neuron
+            mean from the trial-averaged traces before plotting. This shows
+            each neuron's deviation from the population mean at each timestep.
         :param figsize: Figure size as ``(width, height)``.
         :returns: The figure.
         """
         ds = self._dataset
-        neurons = list(range(ds.n_neurons)) if neurons is None else neurons
-        result = Mean(ds).result
+        neuron_indices = _resolve_indices(neurons, ds.n_neurons)
+        result = self._mean.result
         time = np.arange(ds.n_timesteps)
 
+        mean_mat = population_centre(result.mean) if population_centred else result.mean
+
         fig, ax = plt.subplots(figsize=figsize)
-        for k, n in enumerate(neurons):
-            mean = result.mean[:, n]
+        for k, n in enumerate(neuron_indices):
+            mean = mean_mat[:, n]
             ax.plot(
-                time, mean, color=_PALETTE[k % len(_PALETTE)], lw=2, label=f"Neuron {n}"
+                time, mean, color=_palette_color(k), lw=2, label=f"Neuron {n}"
             )
             if show_sem:
                 sem = result.sem[:, n]
@@ -161,44 +269,60 @@ class Illustrator:
                     mean - sem,
                     mean + sem,
                     alpha=0.3,
-                    color=_PALETTE[k % len(_PALETTE)],
+                    color=_palette_color(k),
                 )
 
+        suffix = " (population-centred)" if population_centred else ""
         ax.set_xlabel("Timestep")
         ax.set_ylabel("Activity")
-        ax.set_title("Trial-averaged activity (± SEM)")
+        ax.set_title(f"Trial-averaged activity (± SEM){suffix}")
         ax.legend(fontsize=7, ncol=4, loc="best", frameon=False)
         fig.tight_layout()
         return fig
 
-    # ------------------------------------------------- heatmaps
-
-    def plot_heatmap(
+    def plot_neuron_time_heatmap(
         self,
         trial: int | None = None,
+        neurons: IndexLike | None = None,
+        population_centred: bool = False,
         figsize: tuple[float, float] = (8, 5),
     ) -> Figure:
         """Neuron × time heatmap.
 
-        :param trial: Trial index. If ``None`` (default), uses the trial mean.
+        :param trial: Trial index (0-based). If ``None`` (default), the
+            trial-averaged data is used.
+        :param neurons: Neurons to include. Accepts any :data:`IndexLike`
+            form or ``None`` (all neurons). Defaults to ``None``.
+        :param population_centred: Subtract the per-timestep cross-neuron
+            mean from the matrix before rendering. This highlights relative
+            deviations between neurons at each timestep.
         :param figsize: Figure size as ``(width, height)``.
         :returns: The figure.
         """
         ds = self._dataset
+        neuron_indices = _resolve_indices(neurons, ds.n_neurons)
+
         if trial is None:
-            mat = Mean(ds).result.mean.T  # (n_neurons, n_timesteps)
+            mat = self._mean.result.mean.T  # (n_neurons, n_timesteps)
             title = "Trial-averaged heatmap (neurons × time)"
         else:
             mat = ds.observations[trial].T  # (n_neurons, n_timesteps)
             title = f"Heatmap — Trial {trial + 1} (neurons × time)"
+
+        mat = mat[neuron_indices, :]  # (len(neuron_indices), n_timesteps)
+
+        if population_centred:
+            # centre across neurons at each timestep (axis=0 on transposed matrix)
+            mat = mat - mat.mean(axis=0, keepdims=True)
+            title += " (population-centred)"
 
         vmax = np.abs(mat).max()
         norm = TwoSlopeNorm(vmin=-vmax, vcenter=0, vmax=vmax)
 
         fig, ax = plt.subplots(figsize=figsize)
         im = ax.imshow(mat, aspect="auto", cmap="RdBu_r", norm=norm)
-        ax.set_yticks(range(ds.n_neurons))
-        ax.set_yticklabels([f"Neuron {i}" for i in range(ds.n_neurons)], fontsize=7)
+        ax.set_yticks(range(len(neuron_indices)))
+        ax.set_yticklabels([f"Neuron {i}" for i in neuron_indices], fontsize=7)
         ax.set_xlabel("Timestep")
         ax.set_ylabel("Neuron")
         ax.set_title(title)
@@ -206,35 +330,50 @@ class Illustrator:
         fig.tight_layout()
         return fig
 
-    def plot_neuron_heatmap(
+    def plot_trial_heatmaps(
         self,
-        trials: list[int] | None = None,
-        neurons: list[int] | None = None,
+        trials: IndexLike | None = None,
+        neurons: IndexLike | None = None,
         population_centred: bool = False,
+        figsize: tuple[float, float] | None = None,
+        max_subplots: int = 20,
     ) -> Figure:
         """Per-trial heatmap of neuron activity (timesteps × neurons).
 
-        :param trials: Trial indices to include. Defaults to all.
-        :param neurons: Neuron indices to include. Defaults to all.
-        :param population_centred: If ``True``, subtract per-timestep neuron mean.
+        One subplot is drawn per selected trial.
+
+        :param trials: Trials to include. Accepts any :data:`IndexLike` form
+            or ``None`` (all trials). Defaults to ``None``.
+        :param neurons: Neurons to include. Accepts any :data:`IndexLike`
+            form or ``None`` (all neurons). Defaults to ``None``.
+        :param population_centred: Subtract the per-timestep neuron mean
+            before plotting.
+        :param figsize: Figure size as ``(width, height)``. Defaults to
+            ``None``, which auto-scales to ``(10, 4 × n_selected_trials)``.
+        :param max_subplots: Maximum number of trial subplots to draw. A
+            :class:`UserWarning` is issued and the list is truncated when
+            the selection exceeds this limit. Defaults to ``20``.
         :returns: The figure.
         """
         ds = self._dataset
-        trials = list(range(ds.n_trials)) if trials is None else trials
-        neurons = list(range(ds.n_neurons)) if neurons is None else neurons
+        trial_indices = _guard_subplots(
+            _resolve_indices(trials, ds.n_trials), "trials", max_subplots
+        )
+        neuron_indices = _resolve_indices(neurons, ds.n_neurons)
+        _figsize = figsize if figsize is not None else (10, 4 * len(trial_indices))
 
-        pop_mean = ds.observations.mean(axis=2)
-        pop_centred = ds.observations - pop_mean[:, :, np.newaxis]
+        obs = ds.observations
+        centred = population_centre(obs)  # (n_trials, n_timesteps, n_neurons)
 
-        fig, axes = plt.subplots(len(trials), 1, figsize=(10, 4 * len(trials)))
-        if len(trials) == 1:
+        fig, axes = plt.subplots(len(trial_indices), 1, figsize=_figsize)
+        if len(trial_indices) == 1:
             axes = [axes]
 
-        for ax, trial in zip(axes, trials):
+        for ax, trial in zip(axes, trial_indices):
             mat = (
-                pop_centred[trial, :, :][:, neurons]
+                centred[trial, :, :][:, neuron_indices]
                 if population_centred
-                else ds.observations[trial, :, :][:, neurons]
+                else obs[trial, :, :][:, neuron_indices]
             )
             sns.heatmap(mat.T, cmap="viridis", cbar=True, ax=ax)
             suffix = " (population-centred)" if population_centred else ""
@@ -245,24 +384,30 @@ class Illustrator:
         fig.tight_layout()
         return fig
 
-    # ----------------------------------------------- correlation
-
     def plot_correlation(
         self,
         trial: int | None = None,
+        neurons: IndexLike | None = None,
         figsize: tuple[float, float] = (6, 5),
     ) -> Figure:
         """Plot the Pearson correlation matrix between neurons.
 
-        :param trial: Trial index. If ``None`` (default), all trials are
-            concatenated along the time axis.
+        :param trial: Trial index (0-based). If ``None`` (default), all
+            trials are concatenated along the time axis before computing
+            the correlation.
+        :param neurons: Neurons to include. Accepts any :data:`IndexLike`
+            form or ``None`` (all neurons). The full correlation matrix is
+            computed first and then subsetted, so the result is always a
+            valid symmetric correlation matrix. Defaults to ``None``.
         :param figsize: Figure size as ``(width, height)``.
         :returns: The figure.
         """
         ds = self._dataset
-        corr = Correlation(ds, trial=trial).result
-        n = ds.n_neurons
-        labels = [f"Neuron {i}" for i in range(n)]
+        neuron_indices = _resolve_indices(neurons, ds.n_neurons)
+        corr = Correlation(ds, trial=trial).result  # (n_neurons, n_neurons)
+        corr = corr[np.ix_(neuron_indices, neuron_indices)]
+        n = len(neuron_indices)
+        labels = [f"Neuron {i}" for i in neuron_indices]
 
         fig, ax = plt.subplots(figsize=figsize)
         im = ax.imshow(corr, cmap="RdBu_r", vmin=-1, vmax=1)
@@ -278,21 +423,26 @@ class Illustrator:
         fig.tight_layout()
         return fig
 
-    # ------------------------------------------------------- PCA
-
     def plot_pca(
         self,
         n_components: int = 3,
+        trials: IndexLike | None = None,
         figsize: tuple[float, float] = (12, 4),
     ) -> Figure:
         """Plot top PC time courses and the PC1 vs PC2 state-space trajectory.
 
+        PCA is performed on the trial-averaged data of the selected trials.
+
         :param n_components: Number of PCs to extract and display.
+        :param trials: Trials to average over. Accepts any :data:`IndexLike`
+            form or ``None`` (all trials). Defaults to ``None``.
         :param figsize: Figure size as ``(width, height)``.
         :returns: The figure.
         """
         ds = self._dataset
-        result = PCA(ds, n_components=n_components).result
+        trial_indices = _resolve_indices(trials, ds.n_trials)
+        subset = Dataset(ds.observations[trial_indices])
+        result = PCA(subset, n_components=n_components).result
         time = np.arange(ds.n_timesteps)
 
         fig = plt.figure(figsize=figsize)
@@ -304,7 +454,7 @@ class Illustrator:
             ax_l.plot(
                 time,
                 result.scores[:, k],
-                color=_PALETTE[k % len(_PALETTE)],
+                color=_palette_color(k),
                 lw=2,
                 label=f"PC{k + 1} ({result.explained_variance_ratio[k] * 100:.1f}%)",
             )
@@ -333,32 +483,39 @@ class Illustrator:
     def plot_variance_explained(
         self,
         n_components: int | None = None,
+        trials: IndexLike | None = None,
         figsize: tuple[float, float] = (6, 4),
     ) -> Figure:
         """PCA scree plot showing per-component and cumulative variance explained.
 
+        PCA is performed on the trial-averaged data of the selected trials.
+
         :param n_components: Number of components to show. Defaults to
             ``min(n_timesteps, n_neurons)``.
+        :param trials: Trials to average over. Accepts any :data:`IndexLike`
+            form or ``None`` (all trials). Defaults to ``None``.
         :param figsize: Figure size as ``(width, height)``.
         :returns: The figure.
         """
         ds = self._dataset
-        result = PCA(ds, n_components=n_components).result
+        trial_indices = _resolve_indices(trials, ds.n_trials)
+        subset = Dataset(ds.observations[trial_indices])
+        result = PCA(subset, n_components=n_components).result
         ev = result.explained_variance_ratio
         ks = np.arange(1, len(ev) + 1)
 
         fig, ax1 = plt.subplots(figsize=figsize)
         ax2 = ax1.twinx()
 
-        ax1.bar(ks, ev * 100, color=_PALETTE[0], alpha=0.7, label="Individual")
+        ax1.bar(ks, ev * 100, color=_palette_color(0), alpha=0.7, label="Individual")
         ax2.plot(
-            ks, np.cumsum(ev) * 100, "o-", color=_PALETTE[1], lw=2, label="Cumulative"
+            ks, np.cumsum(ev) * 100, "o-", color=_palette_color(1), lw=2, label="Cumulative"
         )
         ax2.axhline(90, color="grey", ls="--", lw=1, label="90% threshold")
 
         ax1.set_xlabel("Principal component")
-        ax1.set_ylabel("Variance explained (%)", color=_PALETTE[0])
-        ax2.set_ylabel("Cumulative variance (%)", color=_PALETTE[1])
+        ax1.set_ylabel("Variance explained (%)", color=_palette_color(0))
+        ax2.set_ylabel("Cumulative variance (%)", color=_palette_color(1))
         ax1.set_title("PCA — variance explained")
 
         lines1, labs1 = ax1.get_legend_handles_labels()
@@ -368,31 +525,36 @@ class Illustrator:
         fig.tight_layout()
         return fig
 
-    # ------------------------------------------------------- autocorrelation
-
     def plot_autocorrelation(
         self,
-        neurons: list[int] | None = None,
+        neurons: IndexLike | None = None,
+        trials: IndexLike | None = None,
         max_lag: int | None = None,
         figsize: tuple[float, float] = (10, 4),
     ) -> Figure:
-        """Plot the ACF for selected neurons, averaged across trials.
+        """Plot the ACF for selected neurons, averaged across selected trials.
 
-        :param neurons: Neuron indices. Defaults to all.
-        :param max_lag: Maximum lag in timesteps. Defaults to ``n_timesteps // 2``.
+        :param neurons: Neurons to plot. Accepts any :data:`IndexLike` form
+            or ``None`` (all neurons). Defaults to ``None``.
+        :param trials: Trials to average over. Accepts any :data:`IndexLike`
+            form or ``None`` (all trials). Defaults to ``None``.
+        :param max_lag: Maximum lag in timesteps. Defaults to
+            ``n_timesteps // 2``.
         :param figsize: Figure size as ``(width, height)``.
         :returns: The figure.
         """
         ds = self._dataset
-        neurons = list(range(ds.n_neurons)) if neurons is None else neurons
-        result = Autocorrelation(ds, max_lag=max_lag).result
+        trial_indices = _resolve_indices(trials, ds.n_trials)
+        neuron_indices = _resolve_indices(neurons, ds.n_neurons)
+        subset = Dataset(ds.observations[trial_indices])
+        result = Autocorrelation(subset, max_lag=max_lag).result
 
         fig, ax = plt.subplots(figsize=figsize)
-        for k, n in enumerate(neurons):
+        for k, n in enumerate(neuron_indices):
             ax.plot(
                 result.lags,
                 result.acf[n],
-                color=_PALETTE[k % len(_PALETTE)],
+                color=_palette_color(k),
                 lw=2,
                 label=f"Neuron {n}",
             )
@@ -405,31 +567,35 @@ class Illustrator:
         fig.tight_layout()
         return fig
 
-    # ------------------------------------------------------- power spectrum
-
     def plot_power_spectrum(
         self,
-        neurons: list[int] | None = None,
+        neurons: IndexLike | None = None,
+        trials: IndexLike | None = None,
         fs: float = 1.0,
         figsize: tuple[float, float] = (10, 4),
     ) -> Figure:
-        """Plot Welch power spectral density for selected neurons, averaged across trials.
+        """Plot Welch power spectral density for selected neurons, averaged across selected trials.
 
-        :param neurons: Neuron indices. Defaults to all.
-        :param fs: Sampling frequency. Defaults to ``1.0``.
+        :param neurons: Neurons to plot. Accepts any :data:`IndexLike` form
+            or ``None`` (all neurons). Defaults to ``None``.
+        :param trials: Trials to average over. Accepts any :data:`IndexLike`
+            form or ``None`` (all trials). Defaults to ``None``.
+        :param fs: Sampling frequency. Defaults to ``1.0`` (normalised units).
         :param figsize: Figure size as ``(width, height)``.
         :returns: The figure.
         """
         ds = self._dataset
-        neurons = list(range(ds.n_neurons)) if neurons is None else neurons
-        result = PowerSpectrum(ds, fs=fs).result
+        trial_indices = _resolve_indices(trials, ds.n_trials)
+        neuron_indices = _resolve_indices(neurons, ds.n_neurons)
+        subset = Dataset(ds.observations[trial_indices])
+        result = PowerSpectrum(subset, fs=fs).result
 
         fig, ax = plt.subplots(figsize=figsize)
-        for k, n in enumerate(neurons):
+        for k, n in enumerate(neuron_indices):
             ax.semilogy(
                 result.frequencies,
                 result.psd[n],
-                color=_PALETTE[k % len(_PALETTE)],
+                color=_palette_color(k),
                 lw=2,
                 label=f"Neuron {n}",
             )
@@ -441,17 +607,27 @@ class Illustrator:
         fig.tight_layout()
         return fig
 
-    # -------------------------------------------------- convenience
+    def plot_all(self, max_subplots: int = 20) -> dict[str, Figure]:
+        """Run every visualisation method with default parameters.
 
-    def plot_all(self) -> None:
-        """Run every visualisation method with default parameters."""
+        :param max_subplots: Maximum number of subplot panels for methods that
+            produce one panel per trial (forwarded to :meth:`plot_trials` and
+            :meth:`plot_trial_heatmaps`). Defaults to ``20``.
+        :returns: Dict mapping method-name suffix to its :class:`Figure`. Keys
+            are ``"trials"``, ``"trial_average"``, ``"neuron_time_heatmap"``,
+            ``"trial_heatmaps"``, ``"correlation"``, ``"pca"``,
+            ``"variance_explained"``, ``"autocorrelation"``, and
+            ``"power_spectrum"``.
+        """
         self.summary()
-        self.plot_neurons()
-        self.plot_mean_and_std()
-        self.plot_heatmap()
-        self.plot_neuron_heatmap()
-        self.plot_correlation()
-        self.plot_pca()
-        self.plot_variance_explained()
-        self.plot_autocorrelation()
-        self.plot_power_spectrum()
+        return {
+            "trials": self.plot_trials(max_subplots=max_subplots),
+            "trial_average": self.plot_trial_average(),
+            "neuron_time_heatmap": self.plot_neuron_time_heatmap(),
+            "trial_heatmaps": self.plot_trial_heatmaps(max_subplots=max_subplots),
+            "correlation": self.plot_correlation(),
+            "pca": self.plot_pca(),
+            "variance_explained": self.plot_variance_explained(),
+            "autocorrelation": self.plot_autocorrelation(),
+            "power_spectrum": self.plot_power_spectrum(),
+        }
