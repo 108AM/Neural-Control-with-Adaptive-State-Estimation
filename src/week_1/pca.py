@@ -17,10 +17,8 @@ class PCAResult(NamedTuple):
 class PCA(Analysis):
     """Principal component analysis on trial-averaged neural activity.
 
-    The trial mean is computed first. The per-timestep neuron mean is then
-    subtracted (demeaning across neurons at each timestep) before fitting PCA,
-    so that components capture differential structure rather than the shared
-    mean response.
+    The trial mean across repetitions is computed first, after which standard
+    PCA is applied to the resulting population activity matrix.
 
     :param dataset: The dataset to analyse.
     :param n_components: Number of principal components to retain. Defaults to
@@ -31,17 +29,22 @@ class PCA(Analysis):
 
     def __init__(self, dataset: Dataset, n_components: int | None = None) -> None:
         super().__init__(dataset)
-        self._n_components = n_components or min(dataset.n_timesteps, dataset.n_neurons)
+        self._n_components = (
+            n_components
+            if n_components is not None
+            else min(dataset.n_timesteps, dataset.n_neurons)
+        )
 
     @property
     def result(self) -> PCAResult:
         return super().result  # type: ignore[return-value]
 
     def _compute(self) -> PCAResult:
-        trial_mean = self._dataset.observations.mean(axis=0)  # (n_timesteps, n_neurons)
-        demeaned = trial_mean - trial_mean.mean(axis=1, keepdims=True)
+        trial_mean = self._dataset.observations.mean(axis=0)
+
         pca = SklearnPCA(n_components=self._n_components)
-        scores = pca.fit_transform(demeaned)  # (n_timesteps, n_components)
+        scores = pca.fit_transform(trial_mean)
+
         return PCAResult(
             scores=scores,
             explained_variance_ratio=pca.explained_variance_ratio_,
