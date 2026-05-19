@@ -12,7 +12,7 @@ from coherence import Coherence
 from correlation import Correlation
 from cross_correlation import CrossCorrelation
 from dataset import Dataset
-from matplotlib.colors import TwoSlopeNorm
+from matplotlib.colors import Normalize, TwoSlopeNorm
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 from mean import Mean, population_centre
@@ -110,6 +110,23 @@ def _palette_color(k: int):
     """Return the k-th color from the current matplotlib prop cycle."""
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     return colors[k % len(colors)]
+
+
+def _heatmap_cmap_and_norm(
+    mat: np.ndarray, diverging: bool | None
+) -> tuple[str, Normalize | None]:
+    """Return ``(cmap, norm)`` for a heatmap matrix.
+
+    Diverging (``RdBu_r``, zero-centred ``TwoSlopeNorm``) is used when
+    *diverging* is ``True``, or when *diverging* is ``None`` and the data
+    contains both negative and positive values.  Otherwise a sequential
+    ``viridis`` colormap with no norm is returned.
+    """
+    use_diverging = (mat.min() < 0 < mat.max()) if diverging is None else diverging
+    if use_diverging:
+        vmax = np.abs(mat).max()
+        return "RdBu_r", TwoSlopeNorm(vmin=-vmax, vcenter=0, vmax=vmax)
+    return "viridis", None
 
 
 class Illustrator:
@@ -288,6 +305,7 @@ class Illustrator:
         trial: int | None = None,
         neurons: IndexLike | None = None,
         population_centred: bool = False,
+        diverging: bool | None = None,
         figsize: tuple[float, float] = (8, 5),
     ) -> Figure:
         """Neuron × time heatmap.
@@ -299,6 +317,10 @@ class Illustrator:
         :param population_centred: Subtract the per-timestep cross-neuron
             mean from the matrix before rendering. This highlights relative
             deviations between neurons at each timestep.
+        :param diverging: Force a diverging (``RdBu_r``, zero-centred) or
+            sequential (``viridis``) colormap. When ``None`` (default), the
+            choice is made automatically: diverging if the data contains both
+            positive and negative values, sequential otherwise.
         :param figsize: Figure size as ``(width, height)``.
         :returns: The figure.
         """
@@ -319,11 +341,10 @@ class Illustrator:
             mat = mat - mat.mean(axis=0, keepdims=True)
             title += " (population-centred)"
 
-        vmax = np.abs(mat).max()
-        norm = TwoSlopeNorm(vmin=-vmax, vcenter=0, vmax=vmax)
+        cmap, norm = _heatmap_cmap_and_norm(mat, diverging)
 
         fig, ax = plt.subplots(figsize=figsize)
-        im = ax.imshow(mat, aspect="auto", cmap="RdBu_r", norm=norm)
+        im = ax.imshow(mat, aspect="auto", cmap=cmap, norm=norm)
         ax.set_yticks(range(len(neuron_indices)))
         ax.set_yticklabels([f"Neuron {i}" for i in neuron_indices], fontsize=7)
         ax.set_xlabel("Timestep")
@@ -338,6 +359,7 @@ class Illustrator:
         trials: IndexLike | None = None,
         neurons: IndexLike | None = None,
         population_centred: bool = False,
+        diverging: bool | None = None,
         figsize: tuple[float, float] | None = None,
         max_subplots: int = 20,
     ) -> Figure:
@@ -351,6 +373,10 @@ class Illustrator:
             form or ``None`` (all neurons). Defaults to ``None``.
         :param population_centred: Subtract the per-timestep neuron mean
             before plotting.
+        :param diverging: Force a diverging (``RdBu_r``, zero-centred) or
+            sequential (``viridis``) colormap. When ``None`` (default), the
+            choice is made automatically: diverging if the data contains both
+            positive and negative values, sequential otherwise.
         :param figsize: Figure size as ``(width, height)``. Defaults to
             ``None``, which auto-scales to ``(10, 4 × n_selected_trials)``.
         :param max_subplots: Maximum number of trial subplots to draw. A
@@ -378,7 +404,8 @@ class Illustrator:
                 if population_centred
                 else obs[trial, :, :][:, neuron_indices]
             )
-            sns.heatmap(mat.T, cmap="viridis", cbar=True, ax=ax)
+            cmap, norm = _heatmap_cmap_and_norm(mat, diverging)
+            sns.heatmap(mat.T, cmap=cmap, norm=norm, cbar=True, ax=ax)
             suffix = " (population-centred)" if population_centred else ""
             ax.set_title(f"Trial {trial + 1}{suffix}")
             ax.set_xlabel("Timestep")
