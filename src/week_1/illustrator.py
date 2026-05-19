@@ -66,7 +66,7 @@ def _resolve_indices(sel: IndexLike | None, n: int) -> list[int]:
         else:
             indices = [int(i) for i in sel]
     elif isinstance(sel, list):
-        indices = sel
+        indices = [int(i) for i in sel]
     else:
         raise ValueError(
             f"Unsupported index type {type(sel)!r}. Expected None, int, list[int], "
