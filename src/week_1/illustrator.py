@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from autocorrelation import Autocorrelation
+from coherence import Coherence
 from correlation import Correlation
 from cross_correlation import CrossCorrelation
 from dataset import Dataset
@@ -649,6 +650,131 @@ class Illustrator:
         fig.tight_layout()
         return fig
 
+    def plot_coherence(
+        self,
+        neuron_pairs: list[tuple[int, int]] | None = None,
+        trials: IndexLike | None = None,
+        fs: float = 1.0,
+        figsize: tuple[float, float] = (10, 4),
+        max_pairs: int = 6,
+    ) -> Figure:
+        """Plot magnitude-squared coherence spectra for selected neuron pairs.
+
+        Coherence ``Cxy(f) = |Sxy(f)|² / (Sxx(f) · Syy(f))`` measures the
+        degree of linear coupling between two signals at each frequency. A
+        value of 1 means the two neurons are perfectly linearly related at that
+        frequency; 0 means they share no frequency content. This complements
+        the univariate power spectrum: where :meth:`plot_power_spectrum` shows
+        *which* frequencies each neuron oscillates at, this plot reveals
+        *which* pairs of neurons share those oscillations.
+
+        By default only the first ``max_pairs`` adjacent pairs (0→1, 1→2, …)
+        are shown, keeping the plot legible. Pass *neuron_pairs* explicitly to
+        focus on specific relationships — for example, pairs that showed high
+        correlation in :meth:`plot_correlation`.
+
+        :param neuron_pairs: Explicit list of ``(neuron_i, neuron_j)`` pairs to
+            plot. Pass ``None`` (default) to auto-select the first *max_pairs*
+            adjacent pairs.
+        :param trials: Trials to average over. Accepts any :data:`IndexLike`
+            form or ``None`` (all trials). Defaults to ``None``.
+        :param fs: Sampling frequency in Hz. Defaults to ``1.0`` (normalised
+            units). Set to the actual acquisition rate for a meaningful
+            frequency axis.
+        :param figsize: Figure size as ``(width, height)``.
+        :param max_pairs: Maximum number of adjacent pairs shown when
+            *neuron_pairs* is ``None``. Defaults to ``6``.
+        :returns: The figure.
+        """
+        ds = self._dataset
+        trial_indices = _resolve_indices(trials, ds.n_trials)
+        subset = Dataset(ds.observations[trial_indices])
+        result = Coherence(subset, fs=fs).result
+
+        if neuron_pairs is None:
+            n = min(ds.n_neurons - 1, max_pairs)
+            pairs = [(i, i + 1) for i in range(n)]
+        else:
+            pairs = neuron_pairs
+
+        fig, ax = plt.subplots(figsize=figsize)
+        for k, (i, j) in enumerate(pairs):
+            ax.plot(
+                result.frequencies,
+                result.coherence[i, j],
+                color=_palette_color(k),
+                lw=2,
+                label=f"Neuron {i} – {j}",
+            )
+
+        ax.set_xlabel("Frequency")
+        ax.set_ylabel("Magnitude-squared coherence")
+        ax.set_title("Coherence between neurons (Welch, trial-averaged)")
+        ax.set_ylim(0, 1)
+        ax.legend(fontsize=7, frameon=False)
+        fig.tight_layout()
+        return fig
+
+    def plot_coherence_matrix(
+        self,
+        neurons: IndexLike | None = None,
+        trials: IndexLike | None = None,
+        fs: float = 1.0,
+        f_low: float = 0.0,
+        f_high: float | None = None,
+        figsize: tuple[float, float] = (6, 5),
+    ) -> Figure:
+        """Heatmap of band-averaged magnitude-squared coherence between neurons.
+
+        Collapses the full coherence spectrum to a single ``n_neurons ×
+        n_neurons`` matrix by averaging over the frequency band
+        ``[f_low, f_high]``. This gives an at-a-glance view of which neuron
+        pairs share oscillatory activity — analogous to the Pearson correlation
+        matrix from :meth:`plot_correlation`, but frequency-resolved: you can
+        restrict the band to isolate, e.g., slow drift (low frequencies) or
+        fast co-oscillations (high frequencies).
+
+        The band-mean matrix is computed entirely inside :class:`~coherence.Coherence`
+        and stored on :attr:`~coherence.CoherenceResult.band_matrix`, so this
+        method contains no numerical logic.
+
+        :param neurons: Neurons to include. Accepts any :data:`IndexLike` form
+            or ``None`` (all neurons). Defaults to ``None``.
+        :param trials: Trials to average over. Accepts any :data:`IndexLike`
+            form or ``None`` (all trials). Defaults to ``None``.
+        :param fs: Sampling frequency in Hz. Defaults to ``1.0`` (normalised
+            units). Set to the actual acquisition rate for a meaningful band
+            specification.
+        :param f_low: Lower bound (inclusive) of the frequency band to average
+            over. Defaults to ``0.0``.
+        :param f_high: Upper bound (inclusive) of the frequency band to average
+            over. Defaults to ``None`` (Nyquist — the full spectrum).
+        :param figsize: Figure size as ``(width, height)``.
+        :returns: The figure.
+        """
+        ds = self._dataset
+        trial_indices = _resolve_indices(trials, ds.n_trials)
+        neuron_indices = _resolve_indices(neurons, ds.n_neurons)
+        subset = Dataset(ds.observations[trial_indices])
+        result = Coherence(subset, fs=fs, f_low=f_low, f_high=f_high).result
+
+        mat = result.band_matrix[np.ix_(neuron_indices, neuron_indices)]
+        n = len(neuron_indices)
+        labels = [f"Neuron {i}" for i in neuron_indices]
+
+        band_label = f"{f_low}–{f_high if f_high is not None else 'Nyquist'}"
+
+        fig, ax = plt.subplots(figsize=figsize)
+        im = ax.imshow(mat, cmap="viridis", vmin=0, vmax=1)
+        ax.set_xticks(range(n))
+        ax.set_yticks(range(n))
+        ax.set_xticklabels(labels, rotation=90, fontsize=7)
+        ax.set_yticklabels(labels, fontsize=7)
+        ax.set_title(f"Coherence matrix (band mean {band_label})")
+        fig.colorbar(im, ax=ax, label="Magnitude-squared coherence")
+        fig.tight_layout()
+        return fig
+
     def plot_all(self, max_subplots: int = 20) -> dict[str, Figure]:
         """Run every visualisation method with default parameters.
 
@@ -673,4 +799,6 @@ class Illustrator:
             "autocorrelation": self.plot_autocorrelation(),
             "cross_correlation": self.plot_cross_correlation(),
             "power_spectrum": self.plot_power_spectrum(),
+            "coherence": self.plot_coherence(),
+            "coherence_matrix": self.plot_coherence_matrix(),
         }
