@@ -26,6 +26,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx_copybutton",
     "myst_parser",
+    "sphinxcontrib.mermaid",
 ]
 
 templates_path = ["_templates"]
@@ -36,7 +37,7 @@ source_suffix = {
 }
 
 myst_enable_extensions = [
-    "dollarmath",   # $...$ and $$...$$ math in .md files
+    "dollarmath",  # $...$ and $$...$$ math in .md files
     "colon_fence",  # ::: directive shorthand
 ]
 
