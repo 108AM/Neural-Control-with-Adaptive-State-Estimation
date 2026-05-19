@@ -67,3 +67,5 @@ desktop.ini
 # Sphinx
 docs/build/
 docs/source/_autosummary/
+src/week_1/scree_explained_variance.png
+src/week_1/pc1_vs_lateral_mean.png

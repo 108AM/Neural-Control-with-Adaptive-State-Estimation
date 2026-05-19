@@ -65,6 +65,3 @@ class Simulator:
                 observations[trial, t] = self.C @ states[trial, t] + obs_noise
 
         return states, observations
-
-    def test(self):
-        print("Simulator test method called.")
