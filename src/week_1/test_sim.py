@@ -7,7 +7,7 @@ test = sim.Simulator(
         {
             "state_dim": 2,
             "input_dim": 2,
-            "obs_dim": 1,
+            "obs_dim": 2,
 
             "A": np.array([
                     [0.9, 0.1],
@@ -23,9 +23,13 @@ test = sim.Simulator(
                 ]),
             
             "C": np.array([
-                    [1.0, 0.0]
+                    [1.0, 0.0],
+                    [0.0, 1.0]
                 ]),
-            "R": np.array([[0]]) # No noise for now!
+            "R": np.array([
+                    [1.0, 0.0],
+                    [0.0, 1.0]
+                ])
         }
     )
 )
@@ -33,6 +37,9 @@ test = sim.Simulator(
 states, observations = test.run(
     initial_state=np.array([1.0, 1.0]), control_inputs=np.zeros((50, 2)), time_steps=50, trials=2
 )
+
+W_o = test.observability_gramian(10)
+print(np.linalg.eig(W_o))
 
 illustrator = ill.Illustrator(observations)
 illustrator.plot_all()

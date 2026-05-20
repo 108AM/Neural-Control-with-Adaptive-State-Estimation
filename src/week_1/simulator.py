@@ -4,7 +4,6 @@ DEFAULT_SEED: list[int] = list(
     map(ord, "Home is where the other members of group 3 are")
 )
 
-
 class Simulator:
     def __init__(self, model: dict):
         self.state_dim: int = model["state_dim"]
@@ -66,5 +65,44 @@ class Simulator:
 
         return states, observations
 
-    def test(self):
-        print("Simulator test method called.")
+    def controllability_gramian(self, T: int) -> np.ndarray:
+        """
+        Compute the finite-horizon controllability Gramian up to time T.
+
+        W_c(T) = sum_{t=0}^{T-1} A^t B B^T (A^T)^t
+
+        A system is controllable iff W_c(T) is full rank for some finite T.
+        """
+        if T < 1:
+            raise ValueError(f"T must be at least 1, got {T}")
+
+        W_c: np.ndarray = np.zeros((self.state_dim, self.state_dim))
+        At: np.ndarray = np.eye(self.state_dim)
+
+        for _ in range(T):
+            AtB: np.ndarray = At @ self.B
+            W_c += AtB @ AtB.T
+            At: np.ndarray = At @ self.A
+
+        return (W_c + W_c.T) / 2 # ENFORCE SYMMETRY
+
+    def observability_gramian(self, T: int) -> np.ndarray:
+        """
+        Compute the finite-horizon observability Gramian up to time T.
+
+        W_o(T) = sum_{t=0}^{T-1} (A^T)^t C^T C A^t
+
+        A system is observable iff W_o(T) is full rank for some finite T.
+        """
+        if T < 1:
+            raise ValueError(f"T must be at least 1, got {T}")
+
+        W_o: np.ndarray = np.zeros((self.state_dim, self.state_dim))
+        At: np.ndarray = np.eye(self.state_dim)  # A^t, initialised to A^0 = I
+
+        for _ in range(T):
+            CAt: np.ndarray = self.C @ At
+            W_o += CAt.T @ CAt
+            At: np.ndarray = self.A @ At
+
+        return (W_o + W_o.T) / 2 # ENFORCE SYMMETRY
