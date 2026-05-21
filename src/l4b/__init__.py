@@ -3,12 +3,15 @@
 from l4b.dataset import Dataset
 from l4b.illustrator import Illustrator
 from l4b.simulator import Simulator
+from l4b.inputs import InputSignal, InputBuilder
 from l4b import stats
 
 __all__ = [
     "Dataset",
     "Illustrator",
     "Simulator",
+    "InputSignal",
+    "InputBuilder",
     "stats",
 ]
 

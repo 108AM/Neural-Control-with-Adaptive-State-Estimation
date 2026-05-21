@@ -67,27 +67,18 @@ extra cost.
 The helper function {func}`~l4b.stats.mean.population_centre` computes the
 population-level centre of mass from a `MeanResult`.
 
-## `inputs` module: control-input factories
+## Input signal generation
 
-The {mod}`l4b.inputs` module provides factory functions that generate
-`(T, m)` NumPy arrays suitable for the `control_inputs` argument of
-{meth}`~l4b.simulator.Simulator.run`.
-
-| Function                            | Description                            |
-| ----------------------------------- | -------------------------------------- |
-| {func}`~l4b.inputs.zero`            | All-zero inputs                        |
-| {func}`~l4b.inputs.random_gaussian` | IID Gaussian noise                     |
-| {func}`~l4b.inputs.pulse`           | Rectangular pulse on selected channels |
-| {func}`~l4b.inputs.oscillatory`     | Sinusoidal signal on all channels      |
-| {func}`~l4b.inputs.single_channel`  | Arbitrary 1-D pattern on one channel   |
-| {func}`~l4b.inputs.ramp`            | Linearly ramping input on one channel  |
+Control signals are generated using {class}`~l4b.inputs.InputSignal` (for individual
+patterns) and {class}`~l4b.inputs.InputBuilder` (for composing multiple patterns on
+different channels). See [Composing Input Signals](composing_inputs.md) for detailed usage
+and design rationale.
 
 ## A typical workflow
 
 ```python
 import numpy as np
 import l4b
-from l4b import inputs
 
 # 1. Define the system
 model = {
@@ -97,7 +88,7 @@ model = {
 sim = l4b.Simulator(model)
 
 # 2. Generate control inputs and run the simulation
-u = inputs.pulse(T=200, m=2, onset=50, duration=10)
+u = l4b.InputSignal.pulse(T=200, m=2, onset=50, duration=10)
 _, obs = sim.run(initial_state=np.zeros(4), control_inputs=u, time_steps=200, trials=50)
 
 # 3. Wrap observations in a Dataset

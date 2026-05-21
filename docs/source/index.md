@@ -5,6 +5,7 @@
 :caption: Guide
 
 architecture
+composing_inputs
 ```
 
 ```{toctree}
