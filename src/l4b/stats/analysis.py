@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import Any
 
-from dataset import Dataset
+from l4b.dataset import Dataset
 
 
 class Analysis(ABC):

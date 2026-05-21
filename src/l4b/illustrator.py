@@ -7,18 +7,18 @@ from typing import Union
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from autocorrelation import Autocorrelation
-from coherence import Coherence
-from correlation import Correlation
-from cross_correlation import CrossCorrelation
-from dataset import Dataset
+from l4b.stats.autocorrelation import Autocorrelation
+from l4b.stats.coherence import Coherence
+from l4b.stats.correlation import Correlation
+from l4b.stats.cross_correlation import CrossCorrelation
+from l4b.dataset import Dataset
 from matplotlib.colors import Normalize, TwoSlopeNorm
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
-from mean import Mean, population_centre
+from l4b.stats.mean import Mean, population_centre
 from numpy.typing import ArrayLike
-from pca import PCA
-from power_spectrum import PowerSpectrum
+from l4b.stats.pca import PCA
+from l4b.stats.power_spectrum import PowerSpectrum
 
 IndexLike = Union[int, list[int], slice, range, "np.ndarray"]
 """Any value accepted as a dimension selector.

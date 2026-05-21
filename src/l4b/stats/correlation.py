@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import numpy as np
-from analysis import Analysis
-from dataset import Dataset
+from l4b.stats.analysis import Analysis
+from l4b.dataset import Dataset
 from numpy.typing import NDArray
 
 

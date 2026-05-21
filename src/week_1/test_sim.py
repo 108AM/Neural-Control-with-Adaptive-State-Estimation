@@ -1,6 +1,5 @@
 import numpy as np
-import simulator as sim
-import illustrator as ill
+from l4b import illustrator as ill, simulator as sim
 
 test = sim.Simulator(
     model=(

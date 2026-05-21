@@ -1,7 +1,7 @@
 [project]
-name = "neural-control-with-adaptive-state-estimation"
+name = "l4b"
 version = "0.1.0"
-description = "Engineering Part IIA project"
+description = "Neural recording analysis toolkit: simulation, statistical analysis, and visualisation of multi-trial, multi-neuron datasets"
 readme = "README.md"
 authors = [
     { name = "Jerry Liu", email = "yhl63@cam.ac.uk" },
@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.scripts]
-neural-control-with-adaptive-state-estimation = "neural_control_with_adaptive_state_estimation:main"
+l4b = "l4b:main"
 
 [build-system]
 requires = ["uv_build>=0.11.12,<0.12.0"]
