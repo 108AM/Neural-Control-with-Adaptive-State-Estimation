@@ -48,12 +48,16 @@ class Simulator:
 
         for trial in range(trials):
             for t in range(1, time_steps):
-                state_noise: np.ndarray = self.generator.multivariate_normal(
-                    np.zeros(self.state_dim), self.Q
+                state_noise: np.ndarray = (
+                    self.generator.multivariate_normal(np.zeros(self.state_dim), self.Q)
+                    if np.any(self.Q)
+                    else np.zeros(self.state_dim)
                 )
 
-                obs_noise: np.ndarray = self.generator.multivariate_normal(
-                    np.zeros(self.obs_dim), self.R
+                obs_noise: np.ndarray = (
+                    self.generator.multivariate_normal(np.zeros(self.obs_dim), self.R)
+                    if np.any(self.R)
+                    else np.zeros(self.obs_dim)
                 )
 
                 states[trial, t] = (
