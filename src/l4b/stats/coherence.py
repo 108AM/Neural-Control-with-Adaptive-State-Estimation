@@ -37,7 +37,9 @@ class Coherence(Analysis):
 
     For each pair (i, j) and each frequency bin f, coherence is:
 
-        Cxy(f) = |Sxy(f)|² / (Sxx(f) · Syy(f))
+    .. math::
+
+        C_{xy}(f) = \\frac{|S_{xy}(f)|^2}{S_{xx}(f) \\cdot S_{yy}(f)}
 
     where Sxy(f) is the cross-spectral density between neurons i and j, and
     Sxx(f), Syy(f) are their respective auto-spectral densities.  All spectra

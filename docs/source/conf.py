@@ -9,7 +9,6 @@ from pathlib import Path
 # The week_1 directory is not an installable package, so make its modules
 # importable by autodoc.
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(_REPO_ROOT / "src" / "week_1"))
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 # -- Project information -----------------------------------------------------
@@ -23,6 +22,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
     "sphinx_copybutton",
     "myst_parser",

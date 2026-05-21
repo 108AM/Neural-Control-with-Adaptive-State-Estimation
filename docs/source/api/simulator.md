@@ -1,7 +1,7 @@
 # Simulator
 
 ```{eval-rst}
-.. py:currentmodule:: simulator
+.. py:currentmodule:: l4b.simulator
 
 .. autoclass:: Simulator
    :members:

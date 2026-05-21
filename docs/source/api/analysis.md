@@ -1,7 +1,7 @@
 # Analysis
 
 ```{eval-rst}
-.. py:currentmodule:: analysis
+.. py:currentmodule:: l4b.stats.analysis
 
 .. autoclass:: Analysis
    :members:
@@ -11,8 +11,10 @@
 
 ## Implementations
 
+### Mean
+
 ```{eval-rst}
-.. py:currentmodule:: mean
+.. py:currentmodule:: l4b.stats.mean
 
 .. autoclass:: Mean
    :members:
@@ -21,10 +23,14 @@
 
 .. autoclass:: MeanResult
    :members:
+
+.. autofunction:: population_centre
 ```
 
+### Correlation
+
 ```{eval-rst}
-.. py:currentmodule:: correlation
+.. py:currentmodule:: l4b.stats.correlation
 
 .. autoclass:: Correlation
    :members:
@@ -32,8 +38,10 @@
    :member-order: bysource
 ```
 
+### PCA
+
 ```{eval-rst}
-.. py:currentmodule:: pca
+.. py:currentmodule:: l4b.stats.pca
 
 .. autoclass:: PCA
    :members:
@@ -44,8 +52,10 @@
    :members:
 ```
 
+### Autocorrelation
+
 ```{eval-rst}
-.. py:currentmodule:: autocorrelation
+.. py:currentmodule:: l4b.stats.autocorrelation
 
 .. autoclass:: Autocorrelation
    :members:
@@ -56,8 +66,10 @@
    :members:
 ```
 
+### Power Spectrum
+
 ```{eval-rst}
-.. py:currentmodule:: power_spectrum
+.. py:currentmodule:: l4b.stats.power_spectrum
 
 .. autoclass:: PowerSpectrum
    :members:
@@ -65,5 +77,33 @@
    :member-order: bysource
 
 .. autoclass:: PowerSpectrumResult
+   :members:
+```
+
+### Coherence
+
+```{eval-rst}
+.. py:currentmodule:: l4b.stats.coherence
+
+.. autoclass:: Coherence
+   :members:
+   :show-inheritance:
+   :member-order: bysource
+
+.. autoclass:: CoherenceResult
+   :members:
+```
+
+### Cross-correlation
+
+```{eval-rst}
+.. py:currentmodule:: l4b.stats.cross_correlation
+
+.. autoclass:: CrossCorrelation
+   :members:
+   :show-inheritance:
+   :member-order: bysource
+
+.. autoclass:: CrossCorrelationResult
    :members:
 ```

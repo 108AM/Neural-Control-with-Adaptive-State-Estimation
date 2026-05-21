@@ -1,7 +1,7 @@
 # Dataset
 
 ```{eval-rst}
-.. py:currentmodule:: dataset
+.. py:currentmodule:: l4b.dataset
 
 .. autoclass:: Dataset
    :members:
