@@ -110,3 +110,56 @@ class Simulator:
             At: np.ndarray = self.A @ At
 
         return (W_o + W_o.T) / 2 # ENFORCE SYMMETRY
+
+    def is_controllable(self, T: int | None = None, tol: float = 1e-10) -> bool:
+        """Return True if the finite-horizon controllability Gramian is full rank.
+
+        Uses T = state_dim steps by default, which is the minimum required for
+        controllability to be detectable.
+
+        :param T: Number of steps for the Gramian. Defaults to ``state_dim``.
+        :param tol: Rank tolerance passed to ``numpy.linalg.matrix_rank``.
+        """
+        T = T if T is not None else self.state_dim
+        W = self.controllability_gramian(T)
+        return int(np.linalg.matrix_rank(W, tol=tol)) == self.state_dim
+
+    def is_observable(self, T: int | None = None, tol: float = 1e-10) -> bool:
+        """Return True if the finite-horizon observability Gramian is full rank.
+
+        Uses T = state_dim steps by default.
+
+        :param T: Number of steps for the Gramian. Defaults to ``state_dim``.
+        :param tol: Rank tolerance passed to ``numpy.linalg.matrix_rank``.
+        """
+        T = T if T is not None else self.state_dim
+        W = self.observability_gramian(T)
+        return int(np.linalg.matrix_rank(W, tol=tol)) == self.state_dim
+
+    def structural_properties(self, T: int | None = None, tol: float = 1e-10) -> dict:
+        """Return a diagnostic summary of controllability and observability.
+
+        Includes rank, required rank, and Gramian condition number for each
+        property. The condition number measures how far the system is from
+        losing the property numerically: a very large value means a direction
+        in state space is nearly uncontrollable or unobservable even if the
+        rank check passes.
+
+        :param T: Gramian horizon. Defaults to ``state_dim``.
+        :param tol: Rank tolerance.
+        :returns: Dict with keys ``controllable``, ``observable``,
+            ``controllability_rank``, ``observability_rank``,
+            ``controllability_condition``, ``observability_condition``, ``T``.
+        """
+        T = T if T is not None else self.state_dim
+        Wc = self.controllability_gramian(T)
+        Wo = self.observability_gramian(T)
+        return {
+            "controllable": int(np.linalg.matrix_rank(Wc, tol=tol)) == self.state_dim,
+            "observable": int(np.linalg.matrix_rank(Wo, tol=tol)) == self.state_dim,
+            "controllability_rank": int(np.linalg.matrix_rank(Wc, tol=tol)),
+            "observability_rank": int(np.linalg.matrix_rank(Wo, tol=tol)),
+            "controllability_condition": float(np.linalg.cond(Wc)),
+            "observability_condition": float(np.linalg.cond(Wo)),
+            "T": T,
+        }
