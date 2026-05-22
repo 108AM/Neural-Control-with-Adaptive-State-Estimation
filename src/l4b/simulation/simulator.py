@@ -102,7 +102,7 @@ class Simulator:
             raise ValueError(f"T must be at least 1, got {T}")
 
         W_o: np.ndarray = np.zeros((self.state_dim, self.state_dim))
-        At: np.ndarray = np.eye(self.state_dim)  # A^t, initialised to A^0 = I
+        At: np.ndarray = np.eye(self.state_dim)
 
         for _ in range(T):
             CAt: np.ndarray = self.C @ At

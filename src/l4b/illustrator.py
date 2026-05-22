@@ -7,18 +7,16 @@ from typing import Union
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from l4b.stats.autocorrelation import Autocorrelation
-from l4b.stats.coherence import Coherence
-from l4b.stats.correlation import Correlation
-from l4b.stats.cross_correlation import CrossCorrelation
-from l4b.dataset import Dataset
 from matplotlib.colors import Normalize, TwoSlopeNorm
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
-from l4b.stats.mean import Mean, population_centre
 from numpy.typing import ArrayLike
-from l4b.stats.pca import PCA
-from l4b.stats.power_spectrum import PowerSpectrum
+
+from l4b.dataset import Dataset
+from l4b.stats import (
+    Autocorrelation, Coherence, Correlation, CrossCorrelation,
+    Mean, PCA, population_centre, PowerSpectrum
+)
 
 IndexLike = Union[int, list[int], slice, range, "np.ndarray"]
 """Any value accepted as a dimension selector.
@@ -151,7 +149,7 @@ class Illustrator:
         """Construct directly from a raw array of shape ``(n_trials, n_timesteps, n_neurons)``."""
         return cls(Dataset(np.asarray(arr)))
 
-    def summary(self) -> dict[str, dict]:
+    def print_summary(self) -> dict[str, dict]:
         """Print per-neuron descriptive statistics to stdout and return them.
 
         :returns: Dict keyed by ``"neuron_<i>"`` where each value is a dict
@@ -419,6 +417,7 @@ class Illustrator:
         trial: int | None = None,
         neurons: IndexLike | None = None,
         figsize: tuple[float, float] = (6, 5),
+        time_lag: int = 0,
     ) -> Figure:
         """Plot the Pearson correlation matrix between neurons.
 
@@ -434,18 +433,21 @@ class Illustrator:
         """
         ds = self._dataset
         neuron_indices = _resolve_indices(neurons, ds.n_neurons)
-        corr = Correlation(ds, trial=trial).result  # (n_neurons, n_neurons)
+        corr = Correlation(ds, trial=trial, time_lag=time_lag).result  # (n_neurons, n_neurons)
         corr = corr[np.ix_(neuron_indices, neuron_indices)]
         n = len(neuron_indices)
-        labels = [f"Neuron {i}" for i in neuron_indices]
+        y_labels = [f"Neuron {i}{' (time t)' if time_lag else ''}" for i in neuron_indices]
+        x_labels = [f"Neuron {i}{f' (time t + {time_lag})' if time_lag else ''}" for i in neuron_indices]
 
         fig, ax = plt.subplots(figsize=figsize)
-        im = ax.imshow(corr, cmap="RdBu_r", vmin=-1, vmax=1)
+        im = ax.imshow(corr, cmap="inferno", vmin=-1, vmax=1)
         ax.set_xticks(range(n))
         ax.set_yticks(range(n))
-        ax.set_xticklabels(labels, rotation=90, fontsize=7)
-        ax.set_yticklabels(labels, fontsize=7)
+        ax.set_xticklabels(x_labels, rotation=90, fontsize=7)
+        ax.set_yticklabels(y_labels, fontsize=7)
         title = "Inter-neuron correlation matrix"
+        if time_lag != 0:
+            title += f" at time lag {time_lag}"
         if trial is not None:
             title += f" (Trial {trial + 1})"
         ax.set_title(title)
@@ -817,7 +819,8 @@ class Illustrator:
             ``"variance_explained"``, ``"autocorrelation"``,
             ``"cross_correlation"``, and ``"power_spectrum"``.
         """
-        self.summary()
+        self.print_summary()
+        print() # Breathing space!
         return {
             "trials": self.plot_trials(max_subplots=max_subplots),
             "trial_average": self.plot_trial_average(),
