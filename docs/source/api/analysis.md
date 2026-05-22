@@ -107,3 +107,64 @@
 .. autoclass:: CrossCorrelationResult
    :members:
 ```
+
+## System Analysis
+
+```{eval-rst}
+.. py:currentmodule:: l4b.simulation.analysis
+
+.. autoclass:: SystemAnalysis
+   :members:
+   :show-inheritance:
+   :member-order: bysource
+```
+
+### Controllability Gramian
+
+```{eval-rst}
+.. py:currentmodule:: l4b.simulation.controllability_gramian
+
+.. autoclass:: ControllabilityGramian
+   :members:
+   :show-inheritance:
+   :member-order: bysource
+
+.. autoclass:: GramianResult
+   :members:
+```
+
+### Observability Gramian
+
+```{eval-rst}
+.. py:currentmodule:: l4b.simulation.observability_gramian
+
+.. autoclass:: ObservabilityGramian
+   :members:
+   :show-inheritance:
+   :member-order: bysource
+```
+
+## Matrix Analysis
+
+```{eval-rst}
+.. py:currentmodule:: l4b.simulation.analysis
+
+.. autoclass:: MatrixAnalysis
+   :members:
+   :show-inheritance:
+   :member-order: bysource
+```
+
+### Spectrum
+
+```{eval-rst}
+.. py:currentmodule:: l4b.simulation.spectrum
+
+.. autoclass:: Spectrum
+   :members:
+   :show-inheritance:
+   :member-order: bysource
+
+.. autoclass:: SpectrumResult
+   :members:
+```
