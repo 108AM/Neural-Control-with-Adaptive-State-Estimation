@@ -6,8 +6,7 @@ def _gramian_size(W) -> int:
     return W.shape[0]
 
 def get_rank(W, tol: float = 1e-10) -> int:
-    size: int = W.shape[0]
-    assert size == W.shape[1], "Gramian must be square"
+    _ = _gramian_size(W)
 
     return int(
         np.linalg.matrix_rank(W, tol=tol)
@@ -22,10 +21,11 @@ def is_observable(W_o, tol: float = 1e-10) -> bool:
     return rank == W_o.shape[0]
 
 def controllability_condition(W_c) -> float:
-    size = _gramian_size(W_c)
+    _ = _gramian_size(W_c)
     return np.linalg.cond(W_c)
 
 def observability_condition(W_o) -> float:
+    _ = _gramian_size(W_o)
     return np.linalg.cond(W_o)
 
 # T = T if T is not None else self.state_dim
