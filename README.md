@@ -1,5 +1,7 @@
 # Neural Control with Adaptive State Estimation
 
+Please visit the documentation here: https://jerryliu0911.github.io/Neural-Control-with-Adaptive-State-Estimation/. You can view examples of usage in the week 1 notebook.
+
 ## Getting started
 
 1. Install uv (https://docs.astral.sh/uv/).
