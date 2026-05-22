@@ -44,7 +44,7 @@ class Simulator:
         observations: np.ndarray = np.zeros((trials, time_steps, self.obs_dim))
 
         states[:, 0] = initial_state
-        observations[:, 0] = self.C @ initial_state
+        observations[:, 0] = self.C @ initial_state + self.generator.multivariate_normal(np.zeros(self.obs_dim), self.R)
 
         for trial in range(trials):
             for t in range(1, time_steps):
