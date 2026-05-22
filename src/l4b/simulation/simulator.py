@@ -44,7 +44,7 @@ class Simulator:
         observations: np.ndarray = np.zeros((trials, time_steps, self.obs_dim))
 
         states[:, 0] = initial_state
-        observations[:, 0] = self.C @ initial_state
+        observations[:, 0] = self.C @ initial_state + self.generator.multivariate_normal(np.zeros(self.obs_dim), self.R)
 
         for trial in range(trials):
             for t in range(1, time_steps):
@@ -110,28 +110,3 @@ class Simulator:
             At: np.ndarray = self.A @ At
 
         return (W_o + W_o.T) / 2 # ENFORCE SYMMETRY
-
-    def is_controllable(self, T: int | None = None, tol: float = 1e-10) -> bool:
-        """Return True if the finite-horizon controllability Gramian is full rank.
-
-        Uses T = state_dim steps by default, which is the minimum required for
-        controllability to be detectable.
-
-        :param T: Number of steps for the Gramian. Defaults to ``state_dim``.
-        :param tol: Rank tolerance passed to ``numpy.linalg.matrix_rank``.
-        """
-        T = T if T is not None else self.state_dim
-        W = self.controllability_gramian(T)
-        return int(np.linalg.matrix_rank(W, tol=tol)) == self.state_dim
-
-    def is_observable(self, T: int | None = None, tol: float = 1e-10) -> bool:
-        """Return True if the finite-horizon observability Gramian is full rank.
-
-        Uses T = state_dim steps by default.
-
-        :param T: Number of steps for the Gramian. Defaults to ``state_dim``.
-        :param tol: Rank tolerance passed to ``numpy.linalg.matrix_rank``.
-        """
-        T = T if T is not None else self.state_dim
-        W = self.observability_gramian(T)
-        return int(np.linalg.matrix_rank(W, tol=tol)) == self.state_dim
