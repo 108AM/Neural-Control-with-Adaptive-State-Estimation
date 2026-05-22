@@ -144,27 +144,30 @@
    :member-order: bysource
 ```
 
-## Matrix Analysis
+### Eigen-spectrum
 
 ```{eval-rst}
-.. py:currentmodule:: l4b.simulation.analysis
+.. py:currentmodule:: l4b.simulation.eigen_spectrum
 
-.. autoclass:: MatrixAnalysis
+.. autoclass:: EigenSpectrum
    :members:
    :show-inheritance:
    :member-order: bysource
+
+.. autoclass:: EigenSpectrumResult
+   :members:
 ```
 
-### Spectrum
+### Eigenpairs
 
 ```{eval-rst}
-.. py:currentmodule:: l4b.simulation.spectrum
+.. py:currentmodule:: l4b.simulation.eigenpairs
 
-.. autoclass:: Spectrum
+.. autoclass:: Eigenpairs
    :members:
    :show-inheritance:
    :member-order: bysource
 
-.. autoclass:: SpectrumResult
+.. autoclass:: EigenpairsResult
    :members:
 ```

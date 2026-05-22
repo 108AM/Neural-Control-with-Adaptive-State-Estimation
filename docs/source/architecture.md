@@ -67,6 +67,21 @@ extra cost.
 The helper function {func}`~l4b.stats.mean.population_centre` computes the
 population-level centre of mass from a `MeanResult`.
 
+## `simulation` subpackage: system analyses
+
+Analyses that depend on the system itself rather than on a recorded `Dataset`
+share the parallel base class {class}`~l4b.simulation.analysis.SystemAnalysis`.
+It mirrors {class}`~l4b.stats.analysis.Analysis` with the same lazy, cached
+`.result` pattern, but is parameterised by a {class}`~l4b.simulator.Simulator`
+so that subclasses can read whichever system matrices they need.
+
+| Class                                                                   | Result type                                                    | What it computes                                                   |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------ |
+| {class}`~l4b.simulation.eigen_spectrum.EigenSpectrum`                   | {class}`~l4b.simulation.eigen_spectrum.EigenSpectrumResult`    | Eigenvalues, spectral radius, and Schur-stability flag of `A`      |
+| {class}`~l4b.simulation.eigenpairs.Eigenpairs`                          | {class}`~l4b.simulation.eigenpairs.EigenpairsResult`           | Right eigenpairs $(\lambda_k, v_k)$ of `A` for modal analysis      |
+| {class}`~l4b.simulation.controllability_gramian.ControllabilityGramian` | {class}`~l4b.simulation.controllability_gramian.GramianResult` | Finite-horizon controllability Gramian, rank, and condition number |
+| {class}`~l4b.simulation.observability_gramian.ObservabilityGramian`     | {class}`~l4b.simulation.controllability_gramian.GramianResult` | Finite-horizon observability Gramian, rank, and condition number   |
+
 ## Input signal generation
 
 Control signals are generated using {class}`~l4b.inputs.InputSignal` (for individual
